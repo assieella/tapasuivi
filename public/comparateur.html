@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparateur de titres — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container" style="max-width: 780px;">
+
+    <div class="card">
+      <h1>Comparateur de titres</h1>
+      <p>Choisis jusqu'à 5 titres pour comparer leur évolution — et ajoute l'indice BRVM Composite comme repère du marché.</p>
+      <div style="background:#F5F7FA; border-radius:8px; padding:14px; font-size:13px; color:#444; margin-bottom:14px;">
+        💡 <strong>Comment lire ce graphique :</strong> tu peux voir l'évolution en <strong>pourcentage</strong> (utile pour comparer plusieurs titres à des prix différents sur une même échelle) ou en <strong>prix réel</strong> (le vrai cours en FCFA, jour par jour). Choisis le mode qui te parle le plus juste en dessous du graphique.
+      </div>
+      <div id="liste-titres" style="max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+        <p>Chargement des titres...</p>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400; margin-top:14px;">
+        <input type="checkbox" id="avec-indice" style="width:auto;"> Ajouter l'indice BRVM Composite comme repère
+      </label>
+      <button onclick="comparer()" style="margin-top:14px;">Comparer</button>
+      <div id="resultat-erreur"></div>
+    </div>
+
+    <div class="card" id="graphique-card" style="display:none;">
+      <h2>Évolution comparée</h2>
+      <div style="display:flex; gap:16px; margin-bottom:14px;">
+        <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
+          <input type="radio" name="mode-affichage" value="pct" checked onchange="changerMode('pct')" style="width:auto;"> Pourcentage (%)
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; font-weight:400;">
+          <input type="radio" name="mode-affichage" value="prix" onchange="changerMode('prix')" style="width:auto;"> Prix réel (FCFA)
+        </label>
+      </div>
+      <div id="graphique"></div>
+      <div id="legende" style="margin-top:14px;"></div>
+      <p id="explication-mode" style="font-size:13px; color:#555; margin-top:10px; background:#F5F7FA; padding:10px; border-radius:6px;"></p>
+      <p style="font-size:12px; color:#777; margin-top:10px;">Cette comparaison est éducative — elle ne constitue pas une recommandation d'achat.</p>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const COULEURS = ['#0F2F59', '#DAAA37', '#0B6E4F', '#8E44AD', '#C0392B', '#2980B9'];
+    let titresDisponibles = [];
+    let dernieresSeries = [];
+    let modeActuel = 'pct';
+
+    async function chargerTitres() {
+      const { titres } = await apiCall('/api/titres');
+      titresDisponibles = titres;
+      const el = document.getElementById('liste-titres');
+      el.innerHTML = titres.map(t => `
+        <label style="display:flex; align-items:center; gap:8px; font-weight:400; padding:4px 0;">
+          <input type="checkbox" class="case-titre" value="${t.ticker}" style="width:auto;">
+          <strong>${t.ticker}</strong> — ${t.nom}
+        </label>
+      `).join('');
+    }
+
+    async function comparer() {
+      const tickers = Array.from(document.querySelectorAll('.case-titre:checked')).map(c => c.value);
+      const avecIndice = document.getElementById('avec-indice').checked;
+      const elErreur = document.getElementById('resultat-erreur');
+      elErreur.innerHTML = '';
+
+      if (!tickers.length && !avecIndice) { elErreur.innerHTML = '<p class="error">Choisis au moins un titre.</p>'; return; }
+      if (tickers.length > 5) { elErreur.innerHTML = '<p class="error">5 titres maximum pour garder le graphique lisible.</p>'; return; }
+
+      try {
+        const params = new URLSearchParams();
+        if (tickers.length) params.set('tickers', tickers.join(','));
+        if (avecIndice) params.set('indice', 'BRVM-C');
+        const { series, message } = await apiCall(`/api/comparateur?${params.toString()}`);
+
+        if (!series || !series.length) {
+          document.getElementById('graphique-card').style.display = 'none';
+          elErreur.innerHTML = `<p style="color:#999;">${message || "Pas assez de données pour comparer ces titres."}</p>`;
+          return;
+        }
+
+        dernieresSeries = series;
+        modeActuel = 'pct';
+        document.querySelector('input[name="mode-affichage"][value="pct"]').checked = true;
+        afficherGraphique(series, 'pct');
+        document.getElementById('graphique-card').style.display = 'block';
+      } catch (e) { elErreur.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    function changerMode(mode) {
+      modeActuel = mode;
+      afficherGraphique(dernieresSeries, mode);
+    }
+
+    function afficherGraphique(series, mode) {
+      const cle = mode === 'prix' ? 'valeur' : 'variation_pct';
+      const largeur = 700, hauteur = 300, marge = 40;
+      const toutesValeurs = series.flatMap(s => s.points.map(p => p[cle]));
+      const minVal = mode === 'prix' ? Math.min(...toutesValeurs) : Math.min(0, ...toutesValeurs);
+      const maxVal = mode === 'prix' ? Math.max(...toutesValeurs) : Math.max(0, ...toutesValeurs);
+      const ecart = (maxVal - minVal) || 1;
+      const nbPoints = Math.max(...series.map(s => s.points.length));
+
+      let svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto;">`;
+
+      if (mode === 'pct') {
+        const yPourZero = hauteur - marge - ((0 - minVal) / ecart) * (hauteur - 2 * marge);
+        svg += `<line x1="${marge}" y1="${yPourZero}" x2="${largeur - marge}" y2="${yPourZero}" stroke="#ccc" stroke-dasharray="4" />`;
+      }
+
+      series.forEach((s, i) => {
+        const couleur = COULEURS[i % COULEURS.length];
+        const coords = s.points.map((p, idx) => {
+          const x = marge + idx * (nbPoints > 1 ? (largeur - 2 * marge) / (s.points.length - 1 || 1) : 0);
+          const y = hauteur - marge - ((p[cle] - minVal) / ecart) * (hauteur - 2 * marge);
+          return `${x},${y}`;
+        }).join(' ');
+        svg += `<polyline points="${coords}" fill="none" stroke="${couleur}" stroke-width="2.5" />`;
+      });
+
+      const serieRef = series.reduce((a, b) => a.points.length > b.points.length ? a : b);
+      const pasEtiquette = Math.max(1, Math.floor(serieRef.points.length / 6));
+      serieRef.points.forEach((p, idx) => {
+        if (idx % pasEtiquette === 0) {
+          const x = marge + idx * (largeur - 2 * marge) / (serieRef.points.length - 1 || 1);
+          svg += `<text x="${x}" y="${hauteur - 8}" font-size="9" fill="#999" text-anchor="middle">${new Date(p.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</text>`;
+        }
+      });
+
+      svg += `</svg>`;
+      document.getElementById('graphique').innerHTML = svg;
+
+      document.getElementById('legende').innerHTML = series.map((s, i) => {
+        const couleur = COULEURS[i % COULEURS.length];
+        const derniere = s.points[s.points.length - 1];
+        let texteValeur;
+        if (mode === 'prix') {
+          const unite = s.id === 'BRVM-C' ? 'points' : 'FCFA';
+          texteValeur = `<span style="color:${couleur};">${Number(derniere.valeur).toLocaleString('fr-FR')} ${unite}</span>`;
+        } else {
+          const signe = derniere.variation_pct >= 0 ? '+' : '';
+          texteValeur = `<span style="color:${derniere.variation_pct >= 0 ? '#0B6E4F' : '#C0392B'}">${signe}${derniere.variation_pct}%</span>`;
+        }
+        return `<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="width:14px; height:14px; background:${couleur}; border-radius:3px; display:inline-block;"></span>
+          <span style="font-size:14px;"><strong>${s.label}</strong> — ${texteValeur}</span>
+        </div>`;
+      }).join('');
+
+      const elExplication = document.getElementById('explication-mode');
+      if (mode === 'prix') {
+        elExplication.innerHTML = "📌 Ici, tu vois le <strong>vrai cours</strong> de chaque titre, jour par jour, en FCFA. Si tu compares des titres à des prix très différents (ex: un à 2 000 FCFA et un autre à 30 000 FCFA), leurs courbes peuvent sembler très éloignées sur ce graphique — ce n'est pas un problème, c'est juste que leurs échelles de prix sont différentes.";
+      } else {
+        elExplication.innerHTML = "📌 Ici, chaque courbe part de <strong>0%</strong> au même jour de départ, peu importe le prix réel du titre. Ça permet de voir facilement <strong>lequel a le plus progressé (ou reculé) en pourcentage</strong>, même si leurs prix en FCFA sont très différents.";
+      }
+    }
+
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+      try {
+        await chargerTitres();
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        document.getElementById('liste-titres').innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

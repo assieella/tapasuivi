@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon espace — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div>
+    <a href="#" onclick="logout()">Déconnexion</a>
+  </div>
+  <div class="ticker-banner" id="ticker-banner" style="display:none;"></div>
+  <div class="container">
+    <div class="card">
+      <h1 id="welcome">Bonjour</h1>
+      <p>Voici l'état de votre suivi.</p>
+      <a href="/titres.html"><button class="btn-secondary">📊 Voir les 48 sociétés cotées BRVM</button></a>
+      <a href="/portefeuille.html"><button class="btn-secondary">💼 Mon portefeuille</button></a>
+      <a href="/comparateur.html"><button class="btn-secondary">📊 Comparer des titres</button></a>
+      <a href="/ressources.html"><button class="btn-secondary">📁 Ressources</button></a>
+      <a href="/formation.html"><button class="btn-secondary">🎓 Formation TAPA INVEST</button></a>
+      <a href="/messages.html"><button class="btn-gold" id="btn-messages">💬 Discuter avec votre conseillère</button></a>
+    </div>
+
+    <div class="card" id="programme-card">
+      <h2>Votre accompagnement</h2>
+      <div id="programme-content"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card" id="appel-card" style="display:none;">
+      <h2>📞 Prochain appel collectif</h2>
+      <div id="appel-content"></div>
+    </div>
+
+    <div class="card" id="profile-card">
+      <h2>1. Profil investisseur</h2>
+      <div id="profile-content"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card" id="plan-card">
+      <h2>2. Plan d'investissement</h2>
+      <div id="plan-content"><p>Chargement...</p></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+
+      // Vérifie en premier si l'accompagnement est terminé : si oui, on verrouille toute la page.
+      try {
+        const statutPrecoce = await apiCall('/api/programme/status');
+        if (statutPrecoce.termine) {
+          afficherAccesTermine(document.querySelector('.container'));
+          document.getElementById('ticker-banner').style.display = 'none';
+          return;
+        }
+      } catch (e) {}
+
+      document.getElementById('welcome').textContent = `Bonjour ${user.full_name}`;
+
+      try {
+        const { titres } = await apiCall('/api/titres');
+        renderTickerBanner(document.getElementById('ticker-banner'), titres);
+      } catch (e) {}
+
+      try {
+        const { non_lus } = await apiCall('/api/messages/non-lus');
+        if (non_lus > 0) document.getElementById('btn-messages').textContent = `💬 Discuter avec votre conseillère (${non_lus} nouveau${non_lus > 1 ? 'x' : ''})`;
+      } catch (e) {}
+
+      try {
+        const statut = await apiCall('/api/programme/status');
+        const el = document.getElementById('programme-content');
+        const dateDebut = new Date(statut.date_debut).toLocaleDateString('fr-FR');
+        const dateFin = new Date(statut.date_fin).toLocaleDateString('fr-FR');
+        let alerteHtml = '';
+        if (statut.termine) alerteHtml = `<div class="alert">Votre accompagnement de ${statut.mois} mois est arrivé à son terme (${dateFin}). Contactez-nous pour le renouveler.</div>`;
+        else if (statut.alerte_fin_proche) alerteHtml = `<div class="alert">⚠️ Votre accompagnement se termine dans <strong>${statut.jours_restants} jours</strong> (le ${dateFin}). Pensez à nous contacter pour la suite si vous souhaitez continuer.</div>`;
+        el.innerHTML = `
+          <p>Programme ${statut.mois} mois — démarré le <strong>${dateDebut}</strong>, se termine le <strong>${dateFin}</strong>.</p>
+          <div style="background:var(--bg); border-radius:8px; height:10px; overflow:hidden; margin:10px 0;"><div style="background:var(--gold); height:10px; width:${statut.pourcentage}%;"></div></div>
+          <p style="font-size:14px; color:#555;">${statut.pourcentage}% du suivi effectué ${statut.termine ? '' : `— ${statut.jours_restants} jours restants`}</p>
+          ${alerteHtml}
+          <p style="margin-top:16px;"><strong>Rappel mensuel d'investissement</strong> — chaque 15 du mois, jusqu'à la fin de votre suivi :</p>
+          <a href="${statut.lien_google_calendar}" target="_blank"><button class="btn-gold">📅 Ajouter à Google Agenda</button></a>
+          <a href="/api/programme/rappel.ics"><button class="btn-secondary">Télécharger le rappel (.ics)</button></a>
+        `;
+      } catch (e) { document.getElementById('programme-content').innerHTML = `<p class="error">${e.message}</p>`; }
+
+      try {
+        const { appel } = await apiCall('/api/programme/prochain-appel');
+        if (appel) {
+          const dateAppel = new Date(appel.date_appel).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' });
+          document.getElementById('appel-card').style.display = 'block';
+          document.getElementById('appel-content').innerHTML = `
+            <p><strong>${dateAppel}</strong>${appel.plateforme ? ' — ' + appel.plateforme : ''}</p>
+            ${appel.notes ? `<p style="font-size:14px; color:#666;">${appel.notes}</p>` : ''}
+            ${appel.lien ? `<a href="${appel.lien}" target="_blank"><button class="btn-gold">Rejoindre l'appel</button></a>` : '<p style="font-size:13px; color:#999;">Le lien sera communiqué prochainement.</p>'}
+          `;
+        }
+      } catch (e) {}
+
+      try {
+        const { profile } = await apiCall('/api/profile/latest');
+        const el = document.getElementById('profile-content');
+        if (profile) {
+          const badgeClass = { 'Prudent': 'badge-prudent', 'Équilibré': 'badge-equilibre', 'Dynamique': 'badge-dynamique', 'Offensif': 'badge-offensif' }[profile.profile_type] || '';
+          el.innerHTML = `
+            <p>Votre profil : <span class="badge ${badgeClass}">${profile.profile_type}</span> (score ${profile.score}/56)</p>
+            <p>Les recommandations détaillées vous ont été envoyées par email.</p>
+            <a href="/rapport-profil.html"><button class="btn-gold">📄 Voir mon rapport</button></a>
+            <a href="/questionnaire-profil.html"><button class="btn-secondary">Refaire le questionnaire</button></a>
+          `;
+        } else {
+          el.innerHTML = `<p>Vous n'avez pas encore complété votre questionnaire de profil investisseur.</p><a href="/questionnaire-profil.html"><button>Commencer le questionnaire</button></a>`;
+        }
+      } catch (e) { document.getElementById('profile-content').innerHTML = `<p class="error">${e.message}</p>`; }
+
+      try {
+        const { plan } = await apiCall('/api/plan/latest');
+        const el = document.getElementById('plan-content');
+        if (plan) {
+          el.innerHTML = `
+            <p>Objectif : <strong>${Number(plan.objectif_montant).toLocaleString('fr-FR')} FCFA</strong> sur ${Math.round(plan.horizon_mois/12)} ans</p>
+            ${plan.strategie ? `<p>Stratégie : <strong>${plan.strategie.charAt(0).toUpperCase() + plan.strategie.slice(1)}</strong></p>` : ''}
+            <p>Versement mensuel retenu : <strong>${Number(plan.versement_mensuel).toLocaleString('fr-FR')} FCFA</strong></p>
+            <p>Montant projeté : <strong>${Number(plan.montant_projete).toLocaleString('fr-FR')} FCFA</strong></p>
+            <p>${plan.objectif_realiste ? '✅ Objectif réaliste' : '⚠️ Objectif ajusté'}</p>
+            <a href="/rapport-plan.html"><button class="btn-gold">📄 Voir mon rapport</button></a>
+            <a href="/questionnaire-plan.html"><button class="btn-secondary">Mettre à jour mon plan</button></a>
+          `;
+        } else {
+          el.innerHTML = `<p>Vous n'avez pas encore défini votre plan d'investissement.</p><a href="/questionnaire-plan.html"><button>Définir mon plan</button></a>`;
+        }
+      } catch (e) { document.getElementById('plan-content').innerHTML = `<p class="error">${e.message}</p>`; }
+    })();
+
+    async function logout() { await apiCall('/api/auth/logout', { method: 'POST' }); window.location.href = '/connexion.html'; }
+  </script>
+</body>
+</html>

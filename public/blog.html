@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .article-card { display: block; text-decoration: none; color: var(--text); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 18px; }
+  .article-card:hover { border-color: var(--gold); }
+  .article-card img { width: 100%; height: 180px; object-fit: cover; display: block; }
+  .article-card .contenu { padding: 16px 18px; }
+  .article-card h2 { font-size: 18px; margin: 0 0 6px 0; }
+  .article-card p { font-size: 14px; color: #555; margin: 0; }
+  .article-card .date { font-size: 12px; color: #999; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/">Accueil</a></div>
+  <div class="container" style="max-width: 720px;">
+    <div class="card">
+      <h1>Blog TAPA CONSEIL</h1>
+      <p>Nos articles sur l'investissement, la BRVM et l'éducation financière.</p>
+    </div>
+    <div id="liste-articles"><p>Chargement...</p></div>
+  </div>
+  <script>
+    (async () => {
+      const el = document.getElementById('liste-articles');
+      try {
+        const res = await fetch('/api/blog');
+        const { articles } = await res.json();
+        if (!articles.length) { el.innerHTML = '<p style="color:#999; text-align:center;">Aucun article publié pour le moment.</p>'; return; }
+        el.innerHTML = articles.map(a => `
+          <a class="article-card" href="/blog/${a.slug}">
+            ${a.image_url ? `<img src="${a.image_url}" alt="${a.titre}">` : ''}
+            <div class="contenu">
+              <h2>${a.titre}</h2>
+              ${a.extrait ? `<p>${a.extrait}</p>` : ''}
+              <p class="date">${new Date(a.date_publication).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+          </a>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">Erreur de chargement.</p>`; }
+    })();
+  </script>
+</body>
+</html>

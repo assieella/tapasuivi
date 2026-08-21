@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche client — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .chat-bulle { max-width: 75%; padding: 10px 14px; border-radius: 14px; margin-bottom: 10px; font-size: 14px; line-height:1.4; }
+  .chat-conseiller { background: var(--navy); color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+  .chat-client { background: var(--bg); border: 1px solid var(--border); margin-right: auto; border-bottom-left-radius: 4px; }
+  .chat-systeme { background: #FCF3DC; border: 1px solid var(--gold); margin-right: auto; border-bottom-left-radius: 4px; }
+  .chat-date { font-size: 11px; color: #999; margin: 2px 4px 12px; }
+  #fil-messages { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; padding: 8px 0; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Fiche client</span></div><a href="/admin.html">← Tous les clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card" id="identite-content"><p>Chargement...</p></div>
+    <div class="card" id="profil-content"></div>
+    <div class="card" id="plan-content"></div>
+    <div class="card" id="portefeuille-content"><h2>Portefeuille</h2><p>Chargement...</p></div>
+    <div class="card">
+      <h2>Notes internes (visibles par vous uniquement)</h2>
+      <textarea id="notes" rows="5" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;" placeholder="Ex: a des difficultés avec le versement mensuel..."></textarea>
+      <button onclick="enregistrerNotes()">Enregistrer les notes</button>
+      <span id="notes-statut" style="margin-left:10px; font-size:13px; color:#0B6E4F;"></span>
+    </div>
+    <div class="card">
+      <h2>Conversation</h2>
+      <div id="fil-messages"><p>Chargement...</p></div>
+      <form id="form-message" style="display:flex; gap:8px; margin-top:12px;">
+        <input type="text" id="input-message" placeholder="Répondre au client..." style="flex:1;" autocomplete="off">
+        <button type="submit" style="margin-top:0;">Envoyer</button>
+      </form>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get('id');
+    function formaterDate(iso) { return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+    let dernierNombreMessages = 0;
+    async function chargerMessages(estActualisationAuto) {
+      const { messages } = await apiCall(`/api/admin/clients/${clientId}/messages`);
+      const el = document.getElementById('fil-messages');
+      const nouveauxMessages = messages.length > dernierNombreMessages;
+      dernierNombreMessages = messages.length;
+      if (!messages.length) { el.innerHTML = '<p style="color:#999;">Aucun message échangé pour le moment.</p>'; return; }
+      el.innerHTML = messages.map(m => {
+        const classe = m.sender === 'client' ? 'chat-client' : (m.sender === 'systeme' ? 'chat-systeme' : 'chat-conseiller');
+        const label = m.sender === 'systeme' ? '<div style="font-size:11px; color:#B8891E;">Message automatique</div>' : '';
+        return `${label}<div class="chat-bulle ${classe}">${m.contenu}</div><div class="chat-date" style="text-align:${m.sender === 'client' ? 'left' : 'right'};">${formaterDate(m.created_at)}</div>`;
+      }).join('');
+      // On ne force le défilement vers le bas que lors du premier chargement ou d'un nouveau message —
+      // pour ne pas interrompre la lecture si l'utilisateur est remonté dans l'historique.
+      if (!estActualisationAuto || nouveauxMessages) el.scrollTop = el.scrollHeight;
+    }
+    setInterval(() => chargerMessages(true), 15000); // actualisation automatique toutes les 15 secondes
+    document.getElementById('form-message').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-message');
+      const contenu = input.value.trim();
+      if (!contenu) return;
+      input.value = '';
+      await apiCall(`/api/admin/clients/${clientId}/messages`, { method: 'POST', body: JSON.stringify({ contenu }) });
+      await chargerMessages();
+    });
+    async function enregistrerNotes() {
+      const contenu = document.getElementById('notes').value;
+      await apiCall(`/api/admin/clients/${clientId}/notes`, { method: 'PUT', body: JSON.stringify({ contenu }) });
+      const statut = document.getElementById('notes-statut');
+      statut.textContent = 'Enregistré ✓';
+      setTimeout(() => statut.textContent = '', 2000);
+    }
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      if (!clientId) { document.getElementById('identite-content').innerHTML = '<p class="error">Aucun client spécifié.</p>'; return; }
+      try {
+        const { client, profiles, plans } = await apiCall(`/api/admin/clients/${clientId}`);
+        document.getElementById('identite-content').innerHTML = `<h1>${client.full_name}</h1><p>${client.email} ${client.phone ? '— ' + client.phone : ''}</p><p>Programme : <strong>${client.programme === '12_mois' ? '12 mois' : '4 mois'}</strong> — client depuis le ${new Date(client.created_at).toLocaleDateString('fr-FR')}</p>`;
+        const p = profiles[0];
+        document.getElementById('profil-content').innerHTML = p ? `<h2>Profil investisseur</h2><p><span class="badge badge-equilibre">${p.profile_type}</span> (score ${p.score})</p><p>${p.profession || ''} — revenus ${p.revenu_mensuel ? Number(p.revenu_mensuel).toLocaleString('fr-FR') + ' FCFA/mois' : 'N/A'} — capital disponible ${p.capital_disponible ? Number(p.capital_disponible).toLocaleString('fr-FR') + ' FCFA' : 'N/A'}</p><p>${p.situation_familiale || ''}${p.nombre_enfants ? `, ${p.nombre_enfants} enfant(s)` : ''}</p>` : '<h2>Profil investisseur</h2><p style="color:#999;">Pas encore complété.</p>';
+        const pl = plans[0];
+        document.getElementById('plan-content').innerHTML = pl ? `<h2>Plan d'investissement</h2><p>Objectif : <strong>${Number(pl.objectif_montant).toLocaleString('fr-FR')} FCFA</strong> sur ${Math.round(pl.horizon_mois/12)} ans</p>${pl.strategie ? `<p>Stratégie : <strong>${pl.strategie.charAt(0).toUpperCase() + pl.strategie.slice(1)}</strong></p>` : ''}<p>Versement mensuel : <strong>${Number(pl.versement_mensuel).toLocaleString('fr-FR')} FCFA</strong> — ${pl.objectif_realiste ? '✅ objectif réaliste' : '⚠️ objectif ajusté'}</p>` : '<h2>Plan d\'investissement</h2><p style="color:#999;">Pas encore défini.</p>';
+      } catch (e) { document.getElementById('identite-content').innerHTML = `<p class="error">${e.message}</p>`; }
+      try {
+        const { positions, montant_net_investi, valeur_totale, transactions } = await apiCall(`/api/admin/clients/${clientId}/portefeuille`);
+        const el = document.getElementById('portefeuille-content');
+        if (!transactions.length) {
+          el.innerHTML = '<h2>Portefeuille</h2><p style="color:#999;">Aucune transaction saisie par le client pour le moment.</p>';
+        } else {
+          const plusValueTotale = valeur_totale - montant_net_investi;
+          el.innerHTML = `
+            <h2>Portefeuille</h2>
+            <p>Valeur actuelle : <strong>${Math.round(valeur_totale).toLocaleString('fr-FR')} FCFA</strong> — Montant net investi : <strong>${Math.round(montant_net_investi).toLocaleString('fr-FR')} FCFA</strong> — Plus/moins-value : <strong style="color:${plusValueTotale >= 0 ? '#0B6E4F' : '#C0392B'}">${plusValueTotale >= 0 ? '+' : ''}${Math.round(plusValueTotale).toLocaleString('fr-FR')} FCFA</strong></p>
+            ${positions.length ? `<h3 style="font-size:15px; margin-top:16px;">Positions actuelles</h3>` + positions.map(p => `
+              <div class="titre-row">
+                <span class="ticker-code">${p.ticker}</span>
+                <span class="titre-nom">${p.quantite_detenue} titres — prix moyen ${p.prix_moyen_achat.toLocaleString('fr-FR')} FCFA</span>
+                <span style="color:${(p.plus_value || 0) >= 0 ? '#0B6E4F' : '#C0392B'}; font-weight:600;">${p.valeur_actuelle !== null ? p.valeur_actuelle.toLocaleString('fr-FR') + ' FCFA' : '—'}</span>
+              </div>
+            `).join('') : ''}
+            <h3 style="font-size:15px; margin-top:16px;">Historique des transactions</h3>
+            ${transactions.map(t => `
+              <div class="titre-row">
+                <span class="ticker-code">${t.ticker}</span>
+                <span class="titre-nom">${t.type === 'achat' ? '🟢 Achat' : '🔴 Vente'} — ${t.quantite} titres à ${Number(t.prix_unitaire).toLocaleString('fr-FR')} FCFA</span>
+                <span style="color:#777; font-size:13px;">${new Date(t.date_transaction).toLocaleDateString('fr-FR')}</span>
+              </div>
+            `).join('')}
+          `;
+        }
+      } catch (e) { document.getElementById('portefeuille-content').innerHTML = `<h2>Portefeuille</h2><p class="error">${e.message}</p>`; }
+      try { const { note } = await apiCall(`/api/admin/clients/${clientId}/notes`); document.getElementById('notes').value = note.contenu || ''; } catch (e) {}
+      await chargerMessages();
+    })();
+  </script>
+</body>
+</html>

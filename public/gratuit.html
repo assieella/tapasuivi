@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vidéos gratuites — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div></div>
+  <div class="container">
+    <div class="card">
+      <h1>Vidéos gratuites TAPA CONSEIL</h1>
+      <p>Accédez gratuitement à nos vidéos d'information sur l'investissement et la BRVM. Créez simplement votre accès ci-dessous.</p>
+      <form id="form-inscription">
+        <label>Prénom</label><input type="text" id="prenom" required>
+        <label>Nom</label><input type="text" id="nom" required>
+        <label>Email</label><input type="email" id="email" required>
+        <label>Mot de passe</label><input type="password" id="password" required minlength="6">
+        <button type="submit">Accéder aux vidéos gratuites</button>
+        <div class="error" id="erreur"></div>
+      </form>
+      <p style="font-size:13px; color:#777; margin-top:20px;">Déjà inscrit(e) ? <a href="/connexion.html" style="color:var(--navy);">Connectez-vous ici</a>.</p>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('form-inscription').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await apiCall('/api/auth/register', { method: 'POST', body: JSON.stringify({
+          prenom: document.getElementById('prenom').value, nom: document.getElementById('nom').value,
+          email: document.getElementById('email').value, password: document.getElementById('password').value,
+          type_inscription: 'gratuit'
+        }) });
+        window.location.href = '/videos-gratuites.html';
+      } catch (err) { document.getElementById('erreur').textContent = err.message; }
+    });
+  </script>
+</body>
+</html>

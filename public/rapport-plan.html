@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport — Plan d'investissement — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .rapport { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(15,47,89,0.08); }
+  .rapport-entete { background: #0F2F59; padding: 30px; text-align: center; }
+  .rapport-entete img { height: 60px; margin-bottom: 10px; }
+  .rapport-entete .eyebrow { color: #DAAA37; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  .rapport-corps { padding: 34px; color: #1C2733; line-height: 1.7; }
+  .rapport-corps table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  .rapport-corps td { padding: 10px 0; border-bottom: 1px solid #E1E5EC; }
+  .rapport-corps td:first-child { color: #666; }
+  .rapport-corps td:last-child { text-align: right; font-weight: 700; color: #0F2F59; }
+  .statut-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 13px; }
+  .rapport-footer { text-align: center; padding: 16px; font-size: 11px; color: #999; }
+  @media print { .no-print { display: none !important; } body { background: white; } .rapport { box-shadow: none; margin: 0; } }
+</style>
+</head>
+<body>
+  <div class="topbar no-print"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container no-print" style="text-align:center; padding-top:16px;">
+    <button onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+
+  <div class="rapport" id="rapport">
+    <div class="rapport-entete">
+      <img src="/images/logo.png" alt="TAPA CONSEIL">
+      <p class="eyebrow">Rapport de plan d'investissement</p>
+    </div>
+    <div class="rapport-corps" id="corps"><p>Chargement...</p></div>
+    <div class="rapport-footer">TAPA CONSEIL — Beyond the limit</div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    function fmt(n) { return Number(n).toLocaleString('fr-FR') + ' FCFA'; }
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+      try {
+        const { plan, strategieInfo } = await apiCall('/api/plan/rapport');
+        document.getElementById('corps').innerHTML = `
+          <p style="font-size:12px; color:#888; text-align:right;">Édité le ${new Date().toLocaleDateString('fr-FR')} — plan établi le ${new Date(plan.created_at).toLocaleDateString('fr-FR')}</p>
+          <p>Voici votre plan d'investissement personnalisé, établi avec TAPA CONSEIL.</p>
+          ${strategieInfo ? `<p><strong>Stratégie retenue : ${strategieInfo.nom}</strong><br>${strategieInfo.description}</p>` : ''}
+          <table>
+            <tr><td>Objectif financier</td><td>${fmt(plan.objectif_montant)}</td></tr>
+            <tr><td>Horizon</td><td>${Math.round(plan.horizon_mois / 12)} ans</td></tr>
+            <tr><td>Montant initial</td><td>${fmt(plan.montant_initial)}</td></tr>
+            <tr><td>Versement mensuel</td><td>${fmt(plan.versement_mensuel)}</td></tr>
+            <tr><td>Montant projeté à l'horizon</td><td>${fmt(plan.montant_projete)}</td></tr>
+          </table>
+          <p style="text-align:center;">
+            <span class="statut-badge" style="background:${plan.objectif_realiste ? '#E4EAF2' : '#FCF3DC'}; color:${plan.objectif_realiste ? '#0F2F59' : '#B8891E'};">
+              ${plan.objectif_realiste ? '✅ Objectif réaliste' : '⚠️ Objectif ajusté'}
+            </span>
+          </p>
+          <p>L'investissement en bourse comporte des risques de perte en capital. Les projections présentées sont des estimations basées sur des hypothèses de rendement moyen, non garanties.</p>
+        `;
+      } catch (e) {
+        document.getElementById('corps').innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

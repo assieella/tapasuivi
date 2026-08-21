@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back-office — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="#" onclick="logout()">Déconnexion</a></div>
+  <div class="container" style="max-width: 1100px;">
+    <div class="card">
+      <h1>📞 Appel collectif mensuel</h1>
+      <p style="font-size:14px; color:#666;">Programme le prochain appel (WhatsApp, Zoom, ou autre — au choix chaque mois). Un rappel automatique (message + email) part la veille pour tous les clients actifs.</p>
+      <label>Date et heure</label><input type="datetime-local" id="ap-date">
+      <label>Plateforme</label><input type="text" id="ap-plateforme" placeholder="Ex: WhatsApp, Zoom...">
+      <label>Lien</label><input type="text" id="ap-lien" placeholder="Lien de connexion (optionnel)">
+      <label>Notes (optionnel)</label><input type="text" id="ap-notes" placeholder="Ex: Thème du mois...">
+      <button onclick="creerAppel()">Programmer l'appel</button>
+      <div id="resultat-appel"></div>
+      <div id="liste-appels" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <h1>Créer un accès client</h1>
+      <p style="font-size:14px; color:#666;">Après règlement du programme (Mobile Money, virement...), crée ici le compte du client. Un mot de passe est généré automatiquement — copie-le et transmets-le au client par WhatsApp ou email.</p>
+      <label>Prénom</label><input type="text" id="nc-prenom">
+      <label>Nom</label><input type="text" id="nc-nom">
+      <label>Email</label><input type="email" id="nc-email">
+      <label>Téléphone / WhatsApp</label><input type="text" id="nc-phone">
+      <label>Programme</label>
+      <select id="nc-programme">
+        <option value="4_mois">Suivi 4 mois</option>
+        <option value="12_mois">Suivi 12 mois</option>
+      </select>
+      <button onclick="creerClient()">Créer le compte</button>
+      <div id="resultat-nouveau-client"></div>
+    </div>
+
+    <div class="card">
+      <h1>Mes clients</h1>
+      <p><a href="/admin-titres.html"><button class="btn-secondary">📊 Gérer les titres BRVM (cours, fiches, dividendes, études)</button></a>
+      <a href="/admin-formation.html"><button class="btn-secondary">🎓 Gérer la formation TAPA INVEST</button></a>
+      <a href="/admin-prospects.html"><button class="btn-secondary">📧 Prospects & vidéos gratuites</button></a>
+      <a href="/admin-decouverte.html"><button class="btn-secondary">🔎 Leads Découverte BRVM</button></a>
+      <a href="/admin-portefeuilles.html"><button class="btn-secondary">💼 Analyses de portefeuille</button></a>
+      <a href="/admin-blog.html"><button class="btn-secondary">📝 Blog</button></a>
+      <a href="/admin-ressources.html"><button class="btn-secondary">📁 Ressources & annuaire SGI</button></a></p>
+      <table id="clients-table">
+        <thead><tr><th>Nom</th><th>Email</th><th>Programme</th><th>Profession</th><th>Profil</th><th>Stratégie</th><th>Capital dispo.</th><th>Objectif</th><th>Versement/mois</th><th>Statut</th><th>Messages</th></tr></thead>
+        <tbody><tr><td colspan="11">Chargement...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function creerAppel() {
+      const el = document.getElementById('resultat-appel');
+      try {
+        await apiCall('/api/admin/appels-mensuels', {
+          method: 'POST',
+          body: JSON.stringify({
+            date_appel: document.getElementById('ap-date').value,
+            plateforme: document.getElementById('ap-plateforme').value,
+            lien: document.getElementById('ap-lien').value,
+            notes: document.getElementById('ap-notes').value
+          })
+        });
+        el.innerHTML = '<p class="success">Appel programmé. Le rappel automatique partira la veille.</p>';
+        document.getElementById('ap-plateforme').value = '';
+        document.getElementById('ap-lien').value = '';
+        document.getElementById('ap-notes').value = '';
+        await chargerAppels();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function supprimerAppel(id) { await apiCall(`/api/admin/appels-mensuels/${id}`, { method: 'DELETE' }); await chargerAppels(); }
+
+    async function chargerAppels() {
+      const { appels } = await apiCall('/api/admin/appels-mensuels');
+      const el = document.getElementById('liste-appels');
+      if (!appels.length) { el.innerHTML = '<p style="color:#999;">Aucun appel programmé.</p>'; return; }
+      el.innerHTML = appels.map(a => `
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+          <span>${new Date(a.date_appel).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })} ${a.plateforme ? '— ' + a.plateforme : ''} ${a.rappel_envoye ? '<span style="color:#999; font-size:12px;">(rappel envoyé)</span>' : ''}</span>
+          <button class="btn-secondary" onclick="supprimerAppel(${a.id})">Retirer</button>
+        </div>
+      `).join('');
+    }
+
+    async function creerClient() {
+      const el = document.getElementById('resultat-nouveau-client');
+      try {
+        const { client, mot_de_passe_genere } = await apiCall('/api/admin/clients', {
+          method: 'POST',
+          body: JSON.stringify({
+            prenom: document.getElementById('nc-prenom').value,
+            nom: document.getElementById('nc-nom').value,
+            email: document.getElementById('nc-email').value,
+            phone: document.getElementById('nc-phone').value,
+            programme: document.getElementById('nc-programme').value
+          })
+        });
+        el.innerHTML = `
+          <div class="success">
+            <p>Compte créé pour ${client.full_name} (${client.email}).</p>
+            <p style="font-size:16px;">Mot de passe généré : <strong style="font-size:20px; letter-spacing:2px;">${mot_de_passe_genere}</strong>
+            <button class="btn-secondary" style="margin-top:0; margin-left:10px;" onclick="navigator.clipboard.writeText('${mot_de_passe_genere}'); this.textContent='Copié ✓'">Copier</button></p>
+            <p style="font-size:13px; color:#666;">Transmets cet email + ce mot de passe au client par WhatsApp ou email — il ne sera plus affiché ensuite.</p>
+          </div>`;
+        document.getElementById('nc-prenom').value = '';
+        document.getElementById('nc-nom').value = '';
+        document.getElementById('nc-email').value = '';
+        document.getElementById('nc-phone').value = '';
+      } catch (e) {
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerAppels();
+      try {
+        const { clients } = await apiCall('/api/admin/clients');
+        const tbody = document.querySelector('#clients-table tbody');
+        if (!clients.length) { tbody.innerHTML = '<tr><td colspan="11">Aucun client pour le moment.</td></tr>'; return; }
+        tbody.innerHTML = clients.map(c => `
+          <tr style="cursor:pointer;" onclick="window.location.href='/admin-client.html?id=${c.id}'">
+            <td>${c.full_name}</td><td>${c.email}</td><td>${c.programme === '12_mois' ? '12 mois' : '4 mois'}</td>
+            <td>${c.profession || '—'}</td><td>${c.profile_type || '—'}</td>
+            <td>${c.strategie ? c.strategie.charAt(0).toUpperCase() + c.strategie.slice(1) : '—'}</td>
+            <td>${c.capital_disponible ? Number(c.capital_disponible).toLocaleString('fr-FR') + ' FCFA' : '—'}</td>
+            <td>${c.objectif_montant ? Number(c.objectif_montant).toLocaleString('fr-FR') + ' FCFA' : '—'}</td>
+            <td>${c.versement_mensuel ? Number(c.versement_mensuel).toLocaleString('fr-FR') + ' FCFA' : '—'}</td>
+            <td>${c.objectif_realiste === null ? '—' : (c.objectif_realiste ? '✅' : '⚠️ ajusté')}</td>
+            <td>${Number(c.messages_non_lus) > 0 ? `<span class="badge badge-offensif">${c.messages_non_lus} nouveau(x)</span>` : '—'}</td>
+          </tr>`).join('');
+      } catch (e) { document.querySelector('#clients-table tbody').innerHTML = `<tr><td colspan="11" class="error">${e.message}</td></tr>`; }
+    })();
+    async function logout() { await apiCall('/api/auth/logout?scope=admin', { method: 'POST' }); window.location.href = '/connexion.html'; }
+  </script>
+</body>
+</html>

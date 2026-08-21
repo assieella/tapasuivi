@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ressources — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container" style="max-width: 760px;">
+
+    <div class="card">
+      <h1>Ressources</h1>
+      <p>Formulaires d'ouverture de compte-titres et guides utiles pour démarrer.</p>
+      <div id="liste-documents"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>🏦 Sociétés de Gestion et d'Intermédiation (SGI)</h2>
+      <p style="font-size:14px; color:#666;">Le passage obligé pour acheter ou vendre des actions à la BRVM — c'est elles qui ouvrent votre compte-titres et exécutent vos ordres. TAPA CONSEIL ne choisit pas à votre place, voici de quoi comparer.</p>
+      <div id="liste-sgi"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Sociétés de Gestion d'OPCVM (SGO)</h2>
+      <p style="font-size:14px; color:#666;">Elles gèrent les fonds communs de placement (FCP) et SICAV — utile si tu préfères confier ton épargne à une gestion collective plutôt que de choisir tes titres toi-même.</p>
+      <div id="liste-sgo"><p>Chargement...</p></div>
+    </div>
+
+  </div>
+  <style>
+    .sgi-card { border: 1px solid var(--border); border-left: 4px solid var(--navy); border-radius: 8px; padding: 16px; margin-bottom: 14px; }
+    .sgi-card.sgo { border-left-color: var(--gold); }
+    .sgi-card h3 { margin: 0 0 6px 0; font-size: 16px; color: var(--navy); }
+    .sgi-card .pays-tag { font-size: 12px; color: #777; font-weight: 400; }
+    .sgi-card p { margin: 4px 0; font-size: 13px; }
+    .sgi-card .min-invest { font-size: 14px; margin: 8px 0; }
+    .sgi-card .contact-line { color: #555; }
+    .sgi-card a { color: var(--navy); }
+  </style>
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+
+      try {
+        const { ressources } = await apiCall('/api/ressources/documents');
+        const el = document.getElementById('liste-documents');
+        if (!ressources.length) {
+          el.innerHTML = '<p style="color:#999;">Aucun document disponible pour le moment.</p>';
+        } else {
+          el.innerHTML = ressources.map(r => `
+            <div class="titre-row" style="display:block;">
+              <strong>${r.titre}</strong> ${r.organisme ? `<span style="color:#777; font-size:13px;"> — ${r.organisme}</span>` : ''}<br>
+              ${r.description ? `<span style="font-size:13px; color:#666;">${r.description}</span><br>` : ''}
+              <a href="${r.lien_url}" target="_blank"><button class="btn-secondary" style="margin-top:8px;">📄 Télécharger</button></a>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        document.getElementById('liste-documents').innerHTML = `<p class="error">${e.message}</p>`;
+      }
+
+      function renderCarte(s) {
+        return `
+          <div class="sgi-card ${s.type === 'SGO' ? 'sgo' : ''}">
+            <h3>${s.nom} ${s.pays ? `<span class="pays-tag">— ${s.pays}</span>` : ''}</h3>
+            ${s.investissement_initial_min ? `<p class="min-invest">💰 Investissement initial minimum : <strong>${s.investissement_initial_min}</strong></p>` : ''}
+            <p class="contact-line">
+              ${s.telephone ? `📞 ${s.telephone}` : ''}${s.telephone && s.email ? ' · ' : ''}${s.email ? `✉️ ${s.email}` : ''}
+            </p>
+            ${s.site_web ? `<p><a href="${s.site_web.startsWith('http') ? s.site_web : 'https://' + s.site_web}" target="_blank">🔗 ${s.site_web}</a></p>` : ''}
+            ${s.adresse ? `<p style="color:#888;">📍 ${s.adresse}</p>` : ''}
+            ${s.description ? `<p style="color:#666;">${s.description}</p>` : ''}
+          </div>
+        `;
+      }
+
+      try {
+        const { annuaire } = await apiCall('/api/ressources/annuaire');
+        const sgi = annuaire.filter(s => s.type === 'SGI');
+        const sgo = annuaire.filter(s => s.type === 'SGO');
+
+        const elSgi = document.getElementById('liste-sgi');
+        elSgi.innerHTML = sgi.length ? sgi.map(renderCarte).join('') : '<p style="color:#999;">Annuaire en cours de constitution.</p>';
+
+        const elSgo = document.getElementById('liste-sgo');
+        elSgo.innerHTML = sgo.length ? sgo.map(renderCarte).join('') : '<p style="color:#999;">Annuaire en cours de constitution.</p>';
+      } catch (e) {
+        document.getElementById('liste-sgi').innerHTML = `<p class="error">${e.message}</p>`;
+        document.getElementById('liste-sgo').innerHTML = '';
+      }
+    })();
+  </script>
+</body>
+</html>

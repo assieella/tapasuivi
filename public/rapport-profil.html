@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport — Profil investisseur — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .rapport { font-family: Georgia, 'Times New Roman', serif; max-width: 680px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(15,47,89,0.08); }
+  .rapport-entete { background: #0F2F59; padding: 30px; text-align: center; }
+  .rapport-entete img { height: 60px; margin-bottom: 10px; }
+  .rapport-entete .eyebrow { color: #DAAA37; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  .rapport-corps { padding: 34px; color: #1C2733; line-height: 1.7; }
+  .rapport-corps p { margin: 0 0 16px 0; }
+  .rapport-footer { text-align: center; padding: 16px; font-size: 11px; color: #999; }
+  @media print { .no-print { display: none !important; } body { background: white; } .rapport { box-shadow: none; margin: 0; } }
+</style>
+</head>
+<body>
+  <div class="topbar no-print"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container no-print" style="text-align:center; padding-top:16px;">
+    <button onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+
+  <div class="rapport" id="rapport">
+    <div class="rapport-entete">
+      <img src="/images/logo.png" alt="TAPA CONSEIL">
+      <p class="eyebrow">Rapport de profil investisseur</p>
+    </div>
+    <div class="rapport-corps" id="corps"><p>Chargement...</p></div>
+    <div class="rapport-footer">TAPA CONSEIL — Beyond the limit</div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+      try {
+        const { paragraphes, profile, date } = await apiCall('/api/profile/rapport');
+        document.getElementById('corps').innerHTML = `
+          <p style="font-size:12px; color:#888; text-align:right;">Édité le ${new Date().toLocaleDateString('fr-FR')} — profil établi le ${new Date(date).toLocaleDateString('fr-FR')}</p>
+          ${paragraphes.map(p => `<p>${p}</p>`).join('')}
+        `;
+      } catch (e) {
+        document.getElementById('corps').innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

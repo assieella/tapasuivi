@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prospects & vidéos gratuites — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Prospects & vidéos gratuites</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>Ajouter une vidéo gratuite</h1>
+      <label>Ordre d'affichage</label><input type="number" id="v-ordre" value="1" min="1">
+      <label>Titre</label><input type="text" id="v-titre" placeholder="Ex: Les 5 erreurs à éviter en bourse">
+      <label>Description (optionnelle)</label><input type="text" id="v-description">
+      <label>Identifiant vidéo YouTube</label><input type="text" id="v-youtube" placeholder="Ex: dQw4w9WgXcQ">
+      <button onclick="ajouterVideo()">Publier la vidéo</button>
+      <div id="resultat-video"></div>
+    </div>
+    <div class="card"><h2>Vidéos gratuites publiées</h2><div id="liste-videos"><p>Chargement...</p></div></div>
+    <div class="card">
+      <h2>Prospects inscrits (base pour campagne email)</h2>
+      <p style="font-size:14px; color:#666;">Toute personne inscrite via la page vidéos gratuites (avec mot de passe) apparaît ici.</p>
+      <button class="btn-secondary" onclick="copierEmails()">📋 Copier tous les emails</button>
+      <div id="liste-prospects" style="margin-top:12px;"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let emailsProspects = [];
+    async function ajouterVideo() {
+      try {
+        await apiCall('/api/admin/videos-gratuites', { method: 'POST', body: JSON.stringify({
+          ordre: Number(document.getElementById('v-ordre').value), titre: document.getElementById('v-titre').value,
+          description: document.getElementById('v-description').value, youtube_id: document.getElementById('v-youtube').value.trim() }) });
+        document.getElementById('resultat-video').innerHTML = '<p class="success">Vidéo publiée.</p>';
+        document.getElementById('v-titre').value = ''; document.getElementById('v-description').value = ''; document.getElementById('v-youtube').value = '';
+        await chargerVideos();
+      } catch (e) { document.getElementById('resultat-video').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function chargerVideos() {
+      const { videos } = await apiCall('/api/admin/videos-gratuites');
+      const actives = videos.filter(v => v.actif);
+      document.getElementById('liste-videos').innerHTML = actives.length ? actives.map(v => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);"><span>${v.ordre}. ${v.titre}</span><button class="btn-secondary" onclick="supprimerVideo(${v.id})">Retirer</button></div>`).join('') : '<p style="color:#999;">Aucune vidéo publiée.</p>';
+    }
+    async function supprimerVideo(id) { await apiCall(`/api/admin/videos-gratuites/${id}`, { method: 'DELETE' }); await chargerVideos(); }
+    async function chargerProspects() {
+      const { prospects } = await apiCall('/api/admin/prospects');
+      emailsProspects = prospects.map(p => p.email);
+      const el = document.getElementById('liste-prospects');
+      if (!prospects.length) { el.innerHTML = '<p style="color:#999;">Aucun prospect pour le moment.</p>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Nom</th><th>Email</th><th>Inscrit le</th></tr></thead><tbody>${prospects.map(p => `<tr><td>${p.full_name}</td><td>${p.email}</td><td>${new Date(p.created_at).toLocaleDateString('fr-FR')}</td></tr>`).join('')}</tbody></table><p style="font-size:13px; color:#777; margin-top:10px;">${prospects.length} prospect(s) au total.</p>`;
+    }
+    function copierEmails() { navigator.clipboard.writeText(emailsProspects.join(', ')); alert(`${emailsProspects.length} email(s) copié(s) dans le presse-papier.`); }
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerVideos(); await chargerProspects();
+    })();
+  </script>
+</body>
+</html>

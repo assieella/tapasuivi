@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vidéos gratuites — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .video-wrap { position:relative; width:100%; padding-top:56.25%; border-radius:8px; overflow:hidden; margin-bottom:10px; }
+  .video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="#" onclick="logout()">Déconnexion</a></div>
+  <div class="container">
+    <div class="card"><h1>Vos vidéos gratuites</h1><p>Merci de votre inscription ! Voici les vidéos disponibles. Pour un accompagnement complet et personnalisé, découvrez <a href="/vente.html" style="color:var(--navy); font-weight:600;">TAPA INVEST</a>.</p></div>
+    <div id="liste-videos"><p>Chargement...</p></div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      try {
+        const { videos } = await apiCall('/api/videos-gratuites');
+        const el = document.getElementById('liste-videos');
+        if (!videos.length) { el.innerHTML = '<div class="card"><p style="color:#999;">Aucune vidéo disponible pour le moment.</p></div>'; return; }
+        el.innerHTML = videos.map(v => `<div class="card"><h2>${v.titre}</h2>${v.description ? `<p>${v.description}</p>` : ''}<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${v.youtube_id}" allowfullscreen></iframe></div></div>`).join('');
+      } catch (e) { document.getElementById('liste-videos').innerHTML = `<div class="card"><p class="error">${e.message}</p></div>`; }
+    })();
+    async function logout() { await apiCall('/api/auth/logout', { method: 'POST' }); window.location.href = '/gratuit.html'; }
+  </script>
+</body>
+</html>

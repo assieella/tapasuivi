@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Vidéos Questions/Réponses BRVM — TAPA CONSEIL</title>
+<style>
+  :root { --navy: #0F2F59; --navy-deep: #081b36; --gold: #DAAA37; --gold-light: #F0D385; --cream: #FBF8F2; --ink: #1C2733; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--cream); line-height: 1.6; }
+  h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; color: var(--navy); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+  .hero { background: radial-gradient(ellipse at 30% 20%, #16447f 0%, var(--navy) 45%, var(--navy-deep) 100%); color: white; padding: 46px 0 36px; text-align: center; }
+  .hero img.logo { height: 70px; margin-bottom: 10px; }
+  .hero h1 { color: white; font-size: 28px; margin: 6px auto; }
+  .hero p { color: #D9E2EF; font-size: 15px; }
+  .video-item { background: white; border-radius: 12px; padding: 20px; margin: 22px 0; box-shadow: 0 4px 14px rgba(15,47,89,0.08); }
+  .video-wrap { position: relative; width: 100%; padding-top: 56.25%; border-radius: 10px; overflow: hidden; }
+  .video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+  .pret-section { text-align: center; padding: 40px 0 60px; }
+  .pret-section .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 8px 26px rgba(15,47,89,0.10); }
+  .pret-section p { color: #555; margin-bottom: 18px; }
+  .btn-whatsapp { display: inline-flex; align-items: center; gap: 8px; background: #25D366; color: white; text-decoration: none; font-weight: 700; padding: 15px 30px; border-radius: 40px; font-size: 16px; }
+  footer { background: var(--navy-deep); color: #9FB0C6; text-align: center; padding: 26px 0; font-size: 13px; }
+  footer a { color: var(--gold-light); text-decoration: none; }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="wrap">
+      <img class="logo" src="/images/logo.png" alt="TAPA CONSEIL">
+      <h1>Vos vidéos Questions/Réponses</h1>
+      <p>Merci de votre inscription ! Voici nos vidéos qui expliquent la BRVM, question par question.</p>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="liste-videos"><p style="text-align:center; color:#666; padding:30px 0;">Chargement...</p></div>
+
+    <div class="pret-section">
+      <div class="card">
+        <h2>Prêt(e) à vous lancer ?</h2>
+        <p>Une fois les vidéos vues, contactez-nous directement pour démarrer votre accompagnement TAPA INVEST.</p>
+        <a class="btn-whatsapp" href="https://wa.me/2250504775774?text=Merci%20pour%20vos%20vid%C3%A9os%2C%20je%20suis%20pr%C3%AAt(e)%20%C3%A0%20me%20lancer" target="_blank">💬 Je suis prêt(e), on en parle sur WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <p>TAPA CONSEIL — Beyond the limit</p>
+      <p><a href="mailto:formationella398@gmail.com">formationella398@gmail.com</a></p>
+    </div>
+  </footer>
+
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('/api/leads-decouverte/videos');
+        const { videos } = await res.json();
+        const el = document.getElementById('liste-videos');
+        if (!videos.length) {
+          el.innerHTML = '<div class="video-item"><p>De nouvelles vidéos Questions/Réponses sur la BRVM arrivent très bientôt — nous vous préviendrons par WhatsApp et email.</p></div>';
+        } else {
+          el.innerHTML = videos.map(v => `
+            <div class="video-item">
+              <h3 style="font-size:17px; margin-bottom:8px;">${v.titre}</h3>
+              ${v.description ? `<p style="font-size:14px; color:#555; margin-bottom:10px;">${v.description}</p>` : ''}
+              <div class="video-wrap"><iframe src="https://www.youtube.com/embed/${v.youtube_id}" allowfullscreen></iframe></div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        document.getElementById('liste-videos').innerHTML = '<p style="text-align:center; color:#C0392B;">Erreur de chargement des vidéos.</p>';
+      }
+    })();
+  </script>
+</body>
+</html>

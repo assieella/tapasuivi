@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discuter avec TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .chat-bulle { max-width: 75%; padding: 10px 14px; border-radius: 14px; margin-bottom: 10px; font-size: 14px; line-height:1.4; }
+  .chat-conseiller { background: var(--bg); border: 1px solid var(--border); margin-right: auto; border-bottom-left-radius: 4px; }
+  .chat-client { background: var(--navy); color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+  .chat-systeme { background: #FCF3DC; border: 1px solid var(--gold); margin-right: auto; border-bottom-left-radius: 4px; }
+  .chat-date { font-size: 11px; color: #999; margin: 2px 4px 12px; }
+  #fil-messages { max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; padding: 8px 0; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>Discuter avec votre conseillère</h1>
+      <p style="font-size:14px; color:#666;">Une question, un doute ? Écrivez-nous directement ici.</p>
+      <div id="fil-messages"><p>Chargement...</p></div>
+      <form id="form-message" style="display:flex; gap:8px; margin-top:12px;">
+        <input type="text" id="input-message" placeholder="Écrire un message..." style="flex:1;" autocomplete="off">
+        <button type="submit" style="margin-top:0;">Envoyer</button>
+      </form>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    function formaterDate(iso) { return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+    let dernierNombreMessages = 0;
+    async function chargerMessages(estActualisationAuto) {
+      let messages;
+      try {
+        ({ messages } = await apiCall('/api/messages'));
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        document.getElementById('fil-messages').innerHTML = `<p class="error">${e.message}</p>`;
+        return;
+      }
+      const el = document.getElementById('fil-messages');
+      const nouveauxMessages = messages.length > dernierNombreMessages;
+      dernierNombreMessages = messages.length;
+      if (!messages.length) { el.innerHTML = '<p style="color:#999;">Aucun message pour le moment. Écrivez-nous si vous avez une question !</p>'; return; }
+      el.innerHTML = messages.map(m => {
+        const classe = m.sender === 'client' ? 'chat-client' : (m.sender === 'systeme' ? 'chat-systeme' : 'chat-conseiller');
+        return `<div class="chat-bulle ${classe}">${m.contenu}</div><div class="chat-date" style="text-align:${m.sender === 'client' ? 'right' : 'left'};">${formaterDate(m.created_at)}</div>`;
+      }).join('');
+      if (!estActualisationAuto || nouveauxMessages) el.scrollTop = el.scrollHeight;
+    }
+    setInterval(() => chargerMessages(true), 15000);
+    document.getElementById('form-message').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-message');
+      const contenu = input.value.trim();
+      if (!contenu) return;
+      input.value = '';
+      try { await apiCall('/api/messages', { method: 'POST', body: JSON.stringify({ contenu }) }); await chargerMessages(); }
+      catch (e) { alert(e.message); }
+    });
+    (async () => { const user = await requireLogin(); if (!user) return; await chargerMessages(); })();
+  </script>
+</body>
+</html>

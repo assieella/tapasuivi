@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des titres BRVM — TAPA CONSEIL</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office — Titres BRVM</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>1. Mettre à jour les cours du jour</h1>
+      <p>Va sur <a href="https://www.brvm.org/fr/marche-des-actions" target="_blank">la page "Marché des actions" de brvm.org</a>, sélectionne et copie le bloc des cotations, puis colle-le ci-dessous.</p>
+      <textarea id="colle-cours" rows="10" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-family:monospace;" placeholder="ABJC 2 950 1,36%&#10;BICB 6 385 -1,33%&#10;..."></textarea>
+      <button onclick="collerCours()">Enregistrer les cours du jour</button>
+      <div id="resultat-colle"></div>
+    </div>
+    <div class="card">
+      <h2>2. Compléter la fiche d'un titre</h2>
+      <label>Choisir un titre</label>
+      <select id="select-titre"></select>
+      <div id="form-fiche"></div>
+    </div>
+    <div class="card">
+      <h2>3. Ajouter un dividende</h2>
+      <label>Titre</label><select id="select-titre-dividende"></select>
+      <label>Année</label><input type="number" id="div-annee" placeholder="2025">
+      <label>Montant par action (FCFA)</label><input type="number" id="div-montant" placeholder="250">
+      <button onclick="ajouterDividende()">Enregistrer le dividende</button>
+      <div id="resultat-dividende"></div>
+    </div>
+    <div class="card">
+      <h2>4. Publier une étude de titre</h2>
+      <label>Titre</label><select id="select-titre-etude"></select>
+      <button class="btn-gold" onclick="genererEtudeIA()">✨ Générer un brouillon avec l'IA</button>
+      <div id="resultat-generation"></div>
+      <label>Titre de l'étude</label><input type="text" id="etude-titre" placeholder="Ex: SONATEL, un dividende toujours solide">
+      <label>Contenu</label><textarea id="etude-contenu" rows="8" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"></textarea>
+      <button onclick="publierEtude()">Publier l'étude</button>
+      <div id="resultat-etude"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let titres = [];
+    async function chargerTitres() {
+      const { titres: liste } = await apiCall('/api/titres');
+      titres = liste;
+      const options = liste.map(t => `<option value="${t.ticker}">${t.ticker} — ${t.nom}</option>`).join('');
+      for (const id of ['select-titre', 'select-titre-dividende', 'select-titre-etude']) document.getElementById(id).innerHTML = options;
+      afficherFormulaireFiche();
+    }
+    function afficherFormulaireFiche() {
+      const ticker = document.getElementById('select-titre').value;
+      const t = titres.find(x => x.ticker === ticker);
+      if (!t) return;
+      document.getElementById('form-fiche').innerHTML = `
+        <label>Nom complet</label><input type="text" id="f-nom" value="${t.nom || ''}">
+        <label>Secteur</label><input type="text" id="f-secteur" value="${t.secteur || ''}">
+        <label>Pays</label><input type="text" id="f-pays" value="${t.pays || ''}">
+        <label>Date d'introduction en bourse</label><input type="date" id="f-date-intro" value="${t.date_introduction ? t.date_introduction.slice(0,10) : ''}">
+        <label>Description</label><textarea id="f-description" rows="4" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">${t.description || ''}</textarea>
+        <button onclick="enregistrerFiche()">Enregistrer la fiche</button>
+        <div id="resultat-fiche"></div>`;
+    }
+    document.getElementById('select-titre').addEventListener('change', afficherFormulaireFiche);
+    async function enregistrerFiche() {
+      const ticker = document.getElementById('select-titre').value;
+      try {
+        await apiCall(`/api/admin/titres/${ticker}`, { method: 'PUT', body: JSON.stringify({
+          nom: document.getElementById('f-nom').value, secteur: document.getElementById('f-secteur').value,
+          pays: document.getElementById('f-pays').value, date_introduction: document.getElementById('f-date-intro').value || null,
+          description: document.getElementById('f-description').value }) });
+        document.getElementById('resultat-fiche').innerHTML = '<p class="success">Fiche enregistrée.</p>';
+        await chargerTitres();
+      } catch (e) { document.getElementById('resultat-fiche').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function collerCours() {
+      const texte = document.getElementById('colle-cours').value;
+      try {
+        const r = await apiCall('/api/admin/cours/coller', { method: 'POST', body: JSON.stringify({ texte }) });
+        let msg = `<p class="success">${r.inseres} cours enregistrés sur ${r.total_lignes_detectees} lignes détectées.</p>`;
+        if (r.fiches_completees > 0) msg += `<p class="success">✅ ${r.fiches_completees} fiche(s) complétée(s) automatiquement (nom + pays).</p>`;
+        if (r.lignes_non_reconnues.length) msg += `<p class="error">Lignes non reconnues : ${r.lignes_non_reconnues.join(', ')}</p>`;
+        if (r.tickers_inconnus.length) msg += `<p class="error">Tickers inconnus (ignorés) : ${r.tickers_inconnus.join(', ')}</p>`;
+        document.getElementById('resultat-colle').innerHTML = msg;
+      } catch (e) { document.getElementById('resultat-colle').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function ajouterDividende() {
+      const ticker = document.getElementById('select-titre-dividende').value;
+      try {
+        await apiCall(`/api/admin/titres/${ticker}/dividendes`, { method: 'POST', body: JSON.stringify({ annee: Number(document.getElementById('div-annee').value), montant_par_action: Number(document.getElementById('div-montant').value) }) });
+        document.getElementById('resultat-dividende').innerHTML = '<p class="success">Dividende enregistré.</p>';
+      } catch (e) { document.getElementById('resultat-dividende').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function genererEtudeIA() {
+      const ticker = document.getElementById('select-titre-etude').value;
+      const el = document.getElementById('resultat-generation');
+      el.innerHTML = '<p style="color:#666;">Génération en cours (quelques secondes)...</p>';
+      try {
+        const r = await apiCall(`/api/admin/titres/${ticker}/etudes/generer`, { method: 'POST' });
+        document.getElementById('etude-titre').value = r.titre_suggere;
+        document.getElementById('etude-contenu').value = r.contenu;
+        el.innerHTML = `<p class="success">Brouillon généré — relis-le avant de publier. ${r.plus_bas !== null ? `(Plus bas observé : ${r.plus_bas} FCFA, plus haut : ${r.plus_haut} FCFA, calculés à partir de tes cours saisis)` : ''}</p>`;
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function publierEtude() {
+      const ticker = document.getElementById('select-titre-etude').value;
+      try {
+        await apiCall(`/api/admin/titres/${ticker}/etudes`, { method: 'POST', body: JSON.stringify({ titre: document.getElementById('etude-titre').value, contenu: document.getElementById('etude-contenu').value }) });
+        document.getElementById('resultat-etude').innerHTML = '<p class="success">Étude publiée.</p>';
+        document.getElementById('etude-titre').value = ''; document.getElementById('etude-contenu').value = '';
+      } catch (e) { document.getElementById('resultat-etude').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerTitres();
+    })();
+  </script>
+</body>
+</html>
