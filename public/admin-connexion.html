@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion Admin — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div>
+    <a href="/">Accueil</a>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h1>🔑 Connexion Admin</h1>
+      <p>Cette page t'amène directement sur le back-office après connexion — pas besoin de retaper l'adresse ensuite.</p>
+      <form id="form-login">
+        <label>Email</label>
+        <input type="email" id="login-email" required>
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" required>
+        <button type="submit">Se connecter au back-office</button>
+        <div class="error" id="login-error"></div>
+      </form>
+      <p style="font-size:13px; margin-top:10px;"><a href="/mot-de-passe-oublie.html">Mot de passe oublié ?</a></p>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      try {
+        const { user } = await apiCall('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        if (user.role !== 'admin') {
+          document.getElementById('login-error').textContent = "Ce compte n'est pas un compte admin — utilise plutôt /connexion.html.";
+          return;
+        }
+        window.location.href = '/admin.html';
+      }
+      catch (err) { document.getElementById('login-error').textContent = err.message; }
+    });
+  </script>
+</body>
+</html>

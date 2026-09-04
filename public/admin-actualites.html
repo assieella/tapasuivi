@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veille du marché — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
+  <div class="container">
+
+    <div class="card">
+      <h1>🔍 Veille du marché BRVM</h1>
+      <p style="font-size:13px; color:#666;">L'agent cherche sur le web les actualités récentes du marché (résultats, dividendes, AG, mouvements notables). Toujours en brouillon — relis et valide avant que tes clients ne le voient.</p>
+      <button onclick="genererActualite()" id="bouton-generer">✨ Générer une actualité maintenant</button>
+      <div id="generation-resultat"></div>
+    </div>
+
+    <div class="card">
+      <h2>Historique</h2>
+      <div id="liste-actualites"><p>Chargement...</p></div>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function genererActualite() {
+      const bouton = document.getElementById('bouton-generer');
+      const el = document.getElementById('generation-resultat');
+      bouton.disabled = true;
+      bouton.textContent = 'Recherche en cours...';
+      try {
+        await apiCall('/api/admin/actualites/generer', { method: 'POST' });
+        el.innerHTML = '<p class="success">✅ Brouillon généré — relis-le ci-dessous avant de le valider.</p>';
+        await chargerActualites();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+      bouton.disabled = false;
+      bouton.textContent = '✨ Générer une actualité maintenant';
+    }
+
+    async function chargerActualites() {
+      const el = document.getElementById('liste-actualites');
+      try {
+        const { actualites } = await apiCall('/api/admin/actualites');
+        if (!actualites.length) { el.innerHTML = '<p style="color:#999;">Aucune actualité générée pour le moment.</p>'; return; }
+        el.innerHTML = actualites.map(a => `
+          <div class="card" style="border:1px solid var(--border);">
+            <input type="text" id="titre-${a.id}" value="${a.titre}" style="font-weight:700; margin-bottom:8px;">
+            ${a.valide ? `<span style="color:#0B6E4F; font-size:12px;">✅ Publiée le ${new Date(a.publiee_le).toLocaleDateString('fr-FR')}</span>` : `<span style="color:#B8891E; font-size:12px;">⏳ Brouillon, non publiée</span>`}
+            <div id="contenu-${a.id}" contenteditable="true" style="width:100%; min-height:120px; padding:10px; border:1px solid var(--border); border-radius:8px; background:white; font-size:14px; line-height:1.6; margin-top:8px; white-space:pre-wrap;">${a.contenu}</div>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button onclick="sauvegarder(${a.id})" style="width:auto;">Enregistrer les modifications</button>
+              ${!a.valide ? `<button onclick="valider(${a.id})" class="btn-gold" style="width:auto;">✅ Valider et publier</button>` : ''}
+              <button onclick="supprimer(${a.id})" style="width:auto; background:#C0392B;">Supprimer</button>
+            </div>
+            <div id="resultat-${a.id}"></div>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function sauvegarder(id) {
+      const titre = document.getElementById(`titre-${id}`).value;
+      const contenu = document.getElementById(`contenu-${id}`).innerText;
+      await apiCall(`/api/admin/actualites/${id}`, { method: 'PUT', body: JSON.stringify({ titre, contenu }) });
+      document.getElementById(`resultat-${id}`).innerHTML = '<p class="success">Modifications enregistrées.</p>';
+    }
+
+    async function valider(id) {
+      const titre = document.getElementById(`titre-${id}`).value;
+      const contenu = document.getElementById(`contenu-${id}`).innerText;
+      await apiCall(`/api/admin/actualites/${id}`, { method: 'PUT', body: JSON.stringify({ titre, contenu }) });
+      await apiCall(`/api/admin/actualites/${id}/valider`, { method: 'POST' });
+      await chargerActualites();
+    }
+
+    async function supprimer(id) {
+      if (!confirm('Supprimer cette actualité ?')) return;
+      await apiCall(`/api/admin/actualites/${id}`, { method: 'DELETE' });
+      await chargerActualites();
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      await chargerActualites();
+    })();
+  </script>
+</body>
+</html>

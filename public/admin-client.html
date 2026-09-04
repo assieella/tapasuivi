@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche client — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .chat-bulle { max-width: 75%; padding: 10px 14px; border-radius: 14px; margin-bottom: 10px; font-size: 14px; line-height:1.4; }
+  .chat-conseiller { background: var(--navy); color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+  .chat-client { background: var(--bg); border: 1px solid var(--border); margin-right: auto; border-bottom-left-radius: 4px; }
+  .chat-systeme { background: #FCF3DC; border: 1px solid var(--gold); margin-right: auto; border-bottom-left-radius: 4px; }
+  .chat-date { font-size: 11px; color: #999; margin: 2px 4px 12px; }
+  #fil-messages { max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; padding: 8px 0; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Fiche client</span></div><a href="/admin.html">← Tous les clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card" id="identite-content"><p>Chargement...</p></div>
+    <div class="card" id="profil-content"></div>
+    <div class="card" id="plan-content"></div>
+    <div class="card" id="portefeuille-content"><h2>Portefeuille</h2><p>Chargement...</p></div>
+    <div class="card" id="analyse-content" style="display:none;">
+      <h2>Analyse pédagogique du portefeuille</h2>
+      <p style="font-size:13px; color:#666;">Génère un brouillon d'analyse (diversification, concentration, cohérence avec la stratégie) basé sur les vraies données du client — à relire et ajuster avant envoi, comme pour l'analyse mensuelle automatique.</p>
+      <label style="font-weight:400;">Montant disponible pour ce mois (optionnel — si le client te l'a communiqué)</label>
+      <input type="number" id="montant-disponible" placeholder="Ex: 50000" style="max-width:200px;">
+      <p style="font-size:12px; color:#999; margin-top:2px;">Si renseigné, l'analyse proposera des pistes de titres concrètes (autres secteurs, prix réels) adaptées à cette somme, en cas de besoin de diversification.</p>
+      <button onclick="genererAnalyse()">✨ Générer une analyse maintenant</button>
+      <div id="analyse-resultat" style="margin-top:16px;"></div>
+    </div>
+    <div class="card">
+      <h2>📋 Journal de suivi <span style="font-size:12px; font-weight:400; color:#B8891E;">(visible par vous ET le client)</span></h2>
+      <p style="font-size:13px; color:#666;">Trace des tâches effectuées et échanges — dossiers remplis, analyses envoyées, appels passés, etc. Le client voit ce journal de son côté.</p>
+      <label>Date</label><input type="date" id="journal-date">
+      <label>Tâche / événement</label><input type="text" id="journal-titre" placeholder="Ex: Dossier d'ouverture de compte rempli avec la cliente">
+      <label>Détails / résultat (optionnel)</label><textarea id="journal-description" rows="2" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;" placeholder="Ex: Dossier complet, prêt à déposer à la SGI Atlantique Finance"></textarea>
+      <label>Statut</label>
+      <select id="journal-statut">
+        <option value="termine">✅ Terminé</option>
+        <option value="en_cours">🔵 En cours</option>
+        <option value="a_faire">⏳ À faire</option>
+      </select>
+      <button onclick="ajouterJournal()">Ajouter au journal</button>
+      <div id="journal-resultat"></div>
+      <div id="journal-liste" style="margin-top:16px;"></div>
+    </div>
+    <div class="card">
+      <h2>Notes internes (visibles par vous uniquement)</h2>
+      <textarea id="notes" rows="5" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;" placeholder="Ex: a des difficultés avec le versement mensuel..."></textarea>
+      <button onclick="enregistrerNotes()">Enregistrer les notes</button>
+      <span id="notes-statut" style="margin-left:10px; font-size:13px; color:#0B6E4F;"></span>
+    </div>
+    <div class="card">
+      <h2>Conversation</h2>
+      <div id="fil-messages"><p>Chargement...</p></div>
+      <form id="form-message" style="display:flex; gap:8px; margin-top:12px;">
+        <input type="text" id="input-message" placeholder="Répondre au client..." style="flex:1;" autocomplete="off">
+        <button type="submit" style="margin-top:0;">Envoyer</button>
+      </form>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get('id');
+    function formaterDate(iso) { return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+    let dernierNombreMessages = 0;
+    async function chargerMessages(estActualisationAuto) {
+      const { messages } = await apiCall(`/api/admin/clients/${clientId}/messages`);
+      const el = document.getElementById('fil-messages');
+      const nouveauxMessages = messages.length > dernierNombreMessages;
+      dernierNombreMessages = messages.length;
+      if (!messages.length) { el.innerHTML = '<p style="color:#999;">Aucun message échangé pour le moment.</p>'; return; }
+      el.innerHTML = messages.map(m => {
+        const classe = m.sender === 'client' ? 'chat-client' : (m.sender === 'systeme' ? 'chat-systeme' : 'chat-conseiller');
+        const label = m.sender === 'systeme' ? '<div style="font-size:11px; color:#B8891E;">Message automatique</div>' : '';
+        return `${label}<div class="chat-bulle ${classe}">${m.contenu}</div><div class="chat-date" style="text-align:${m.sender === 'client' ? 'left' : 'right'};">${formaterDate(m.created_at)}</div>`;
+      }).join('');
+      // On ne force le défilement vers le bas que lors du premier chargement ou d'un nouveau message —
+      // pour ne pas interrompre la lecture si l'utilisateur est remonté dans l'historique.
+      if (!estActualisationAuto || nouveauxMessages) el.scrollTop = el.scrollHeight;
+    }
+    setInterval(() => chargerMessages(true), 15000); // actualisation automatique toutes les 15 secondes
+    document.getElementById('form-message').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-message');
+      const contenu = input.value.trim();
+      if (!contenu) return;
+      input.value = '';
+      await apiCall(`/api/admin/clients/${clientId}/messages`, { method: 'POST', body: JSON.stringify({ contenu }) });
+      await chargerMessages();
+    });
+    const LABELS_STATUT = { termine: '✅ Terminé', en_cours: '🔵 En cours', a_faire: '⏳ À faire' };
+
+    async function chargerJournal() {
+      const el = document.getElementById('journal-liste');
+      try {
+        const { entrees } = await apiCall(`/api/admin/clients/${clientId}/journal`);
+        if (!entrees.length) { el.innerHTML = '<p style="color:#999;">Aucune entrée pour le moment.</p>'; return; }
+        el.innerHTML = entrees.map(e => `
+          <div class="titre-row" style="display:block;">
+            <strong>${new Date(e.date_action).toLocaleDateString('fr-FR')}</strong> — ${LABELS_STATUT[e.statut] || e.statut}
+            <button onclick="supprimerJournal(${e.id})" style="width:auto; padding:2px 8px; font-size:11px; float:right; background:#C0392B;">Supprimer</button>
+            <br><strong style="font-size:14px;">${e.titre}</strong>
+            ${e.description ? `<br><span style="font-size:13px; color:#666;">${e.description}</span>` : ''}
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function ajouterJournal() {
+      const el = document.getElementById('journal-resultat');
+      const titre = document.getElementById('journal-titre').value;
+      if (!titre.trim()) { el.innerHTML = '<p class="error">Le titre de la tâche est obligatoire.</p>'; return; }
+      try {
+        await apiCall(`/api/admin/clients/${clientId}/journal`, {
+          method: 'POST',
+          body: JSON.stringify({
+            date_action: document.getElementById('journal-date').value || null,
+            titre,
+            description: document.getElementById('journal-description').value,
+            statut: document.getElementById('journal-statut').value
+          })
+        });
+        document.getElementById('journal-titre').value = '';
+        document.getElementById('journal-description').value = '';
+        document.getElementById('journal-date').value = '';
+        el.innerHTML = '<p class="success">✅ Ajouté.</p>';
+        await chargerJournal();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function supprimerJournal(id) {
+      if (!confirm('Supprimer cette entrée du journal ?')) return;
+      await apiCall(`/api/admin/journal/${id}`, { method: 'DELETE' });
+      await chargerJournal();
+    }
+
+    async function enregistrerNotes() {
+      const contenu = document.getElementById('notes').value;
+      await apiCall(`/api/admin/clients/${clientId}/notes`, { method: 'PUT', body: JSON.stringify({ contenu }) });
+      const statut = document.getElementById('notes-statut');
+      statut.textContent = 'Enregistré ✓';
+      setTimeout(() => statut.textContent = '', 2000);
+    }
+    async function genererAnalyse() {
+      const el = document.getElementById('analyse-resultat');
+      el.innerHTML = '<p style="color:#999;">Génération en cours...</p>';
+      const montantDisponible = document.getElementById('montant-disponible').value;
+      try {
+        const { analyse } = await apiCall(`/api/admin/clients/${clientId}/analyse-portefeuille`, { method: 'POST', body: JSON.stringify({ montant_disponible: montantDisponible || null }) });
+        el.innerHTML = `
+          <div style="background:#F5F7FA; border-radius:8px; padding:16px;">${analyse.contenu}</div>
+          <p style="font-size:13px; color:#0B6E4F; margin-top:10px;">✅ Brouillon enregistré — va sur <a href="/admin-portefeuilles.html">Analyses de portefeuille</a> pour le relire, l'ajuster si besoin et l'envoyer au client.</p>
+        `;
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      if (!clientId) { document.getElementById('identite-content').innerHTML = '<p class="error">Aucun client spécifié.</p>'; return; }
+      try {
+        const { client, profiles, plans } = await apiCall(`/api/admin/clients/${clientId}`);
+        document.getElementById('identite-content').innerHTML = `<h1>${client.full_name}</h1><p>${client.email} ${client.phone ? '— ' + client.phone : ''}</p><p>Programme : <strong>${client.programme === '12_mois' ? '12 mois' : '4 mois'}</strong> — client depuis le ${new Date(client.created_at).toLocaleDateString('fr-FR')}</p>`;
+        const p = profiles[0];
+        document.getElementById('profil-content').innerHTML = p ? `<h2>Profil investisseur</h2><p><span class="badge badge-equilibre">${p.profile_type}</span> (score ${p.score})</p><p>${p.profession || ''} — revenus ${p.revenu_mensuel ? Number(p.revenu_mensuel).toLocaleString('fr-FR') + ' FCFA/mois' : 'N/A'} — capital disponible ${p.capital_disponible ? Number(p.capital_disponible).toLocaleString('fr-FR') + ' FCFA' : 'N/A'}</p><p>${p.situation_familiale || ''}${p.nombre_enfants ? `, ${p.nombre_enfants} enfant(s)` : ''}</p>` : '<h2>Profil investisseur</h2><p style="color:#999;">Pas encore complété.</p>';
+        const pl = plans[0];
+        document.getElementById('plan-content').innerHTML = pl ? `<h2>Plan d'investissement</h2><p>Objectif : <strong>${Number(pl.objectif_montant).toLocaleString('fr-FR')} FCFA</strong> sur ${Math.round(pl.horizon_mois/12)} ans</p>${pl.strategie ? `<p>Stratégie : <strong>${pl.strategie.charAt(0).toUpperCase() + pl.strategie.slice(1)}</strong></p>` : ''}<p>Versement mensuel : <strong>${Number(pl.versement_mensuel).toLocaleString('fr-FR')} FCFA</strong> — ${pl.objectif_realiste ? '✅ objectif réaliste' : '⚠️ objectif ajusté'}</p>` : '<h2>Plan d\'investissement</h2><p style="color:#999;">Pas encore défini.</p>';
+      } catch (e) { document.getElementById('identite-content').innerHTML = `<p class="error">${e.message}</p>`; }
+      try {
+        const { positions, montant_net_investi, valeur_totale, transactions } = await apiCall(`/api/admin/clients/${clientId}/portefeuille`);
+        const el = document.getElementById('portefeuille-content');
+        if (!transactions.length) {
+          el.innerHTML = '<h2>Portefeuille</h2><p style="color:#999;">Aucune transaction saisie par le client pour le moment.</p>';
+        } else {
+          document.getElementById('analyse-content').style.display = 'block';
+          const plusValueTotale = valeur_totale - montant_net_investi;
+          el.innerHTML = `
+            <h2>Portefeuille</h2>
+            <p>Valeur actuelle : <strong>${Math.round(valeur_totale).toLocaleString('fr-FR')} FCFA</strong> — Montant net investi : <strong>${Math.round(montant_net_investi).toLocaleString('fr-FR')} FCFA</strong> — Plus/moins-value : <strong style="color:${plusValueTotale >= 0 ? '#0B6E4F' : '#C0392B'}">${plusValueTotale >= 0 ? '+' : ''}${Math.round(plusValueTotale).toLocaleString('fr-FR')} FCFA</strong></p>
+            ${positions.length ? `<h3 style="font-size:15px; margin-top:16px;">Positions actuelles</h3>` + positions.map(p => `
+              <div class="titre-row">
+                <span class="ticker-code">${p.ticker}</span>
+                <span class="titre-nom">${p.quantite_detenue} titres — prix moyen ${p.prix_moyen_achat.toLocaleString('fr-FR')} FCFA</span>
+                <span style="color:${(p.plus_value || 0) >= 0 ? '#0B6E4F' : '#C0392B'}; font-weight:600;">${p.valeur_actuelle !== null ? p.valeur_actuelle.toLocaleString('fr-FR') + ' FCFA' : '—'}</span>
+              </div>
+            `).join('') : ''}
+            <h3 style="font-size:15px; margin-top:16px;">Historique des transactions</h3>
+            ${transactions.map(t => `
+              <div class="titre-row">
+                <span class="ticker-code">${t.ticker}</span>
+                <span class="titre-nom">${t.type === 'achat' ? '🟢 Achat' : '🔴 Vente'} — ${t.quantite} titres à ${Number(t.prix_unitaire).toLocaleString('fr-FR')} FCFA</span>
+                <span style="color:#777; font-size:13px;">${new Date(t.date_transaction).toLocaleDateString('fr-FR')}</span>
+              </div>
+            `).join('')}
+          `;
+        }
+      } catch (e) { document.getElementById('portefeuille-content').innerHTML = `<h2>Portefeuille</h2><p class="error">${e.message}</p>`; }
+      try { const { note } = await apiCall(`/api/admin/clients/${clientId}/notes`); document.getElementById('notes').value = note.contenu || ''; } catch (e) {}
+      await chargerJournal();
+      await chargerMessages();
+    })();
+  </script>
+</body>
+</html>

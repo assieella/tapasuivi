@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyses de portefeuille — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Analyses de portefeuille</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>Analyses en attente de validation</h1>
+      <p style="font-size:14px; color:#666;">Générées automatiquement en début de mois pour chaque client ayant des transactions. Relis, ajuste si besoin, puis valide pour l'envoyer.</p>
+      <div id="liste-analyses"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function chargerAnalyses() {
+      const { analyses } = await apiCall('/api/admin/analyses-portefeuille');
+      const el = document.getElementById('liste-analyses');
+      if (!analyses.length) { el.innerHTML = '<p style="color:#999;">Aucune analyse en attente.</p>'; return; }
+      el.innerHTML = analyses.map(a => `
+        <div class="card" style="margin-bottom:16px;">
+          <p><strong>${a.full_name}</strong> — ${new Date(a.mois).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
+          <div id="contenu-${a.id}" contenteditable="true" style="width:100%; min-height:180px; padding:10px; border:1px solid var(--border); border-radius:8px; background:white; font-size:14px; line-height:1.6;">${a.contenu}</div>
+          <p style="font-size:12px; color:#999; margin-top:4px;">Tu peux modifier ce texte directement ici, comme dans un traitement de texte.</p>
+          <button onclick="sauvegarder(${a.id})">Enregistrer les modifications</button>
+          <button class="btn-gold" id="bouton-valider-${a.id}" onclick="valider(${a.id})">✅ Valider et envoyer</button>
+          <div id="resultat-${a.id}"></div>
+        </div>
+      `).join('');
+    }
+
+    async function sauvegarder(id) {
+      const contenu = document.getElementById(`contenu-${id}`).innerHTML;
+      await apiCall(`/api/admin/analyses-portefeuille/${id}`, { method: 'PUT', body: JSON.stringify({ contenu }) });
+      document.getElementById(`resultat-${id}`).innerHTML = '<p class="success">Modifications enregistrées.</p>';
+    }
+
+    async function valider(id) {
+      const bouton = document.getElementById(`bouton-valider-${id}`);
+      const zoneMessage = document.getElementById(`resultat-${id}`);
+      bouton.disabled = true;
+      bouton.textContent = 'Envoi en cours...';
+      try {
+        const contenu = document.getElementById(`contenu-${id}`).innerHTML;
+        await apiCall(`/api/admin/analyses-portefeuille/${id}`, { method: 'PUT', body: JSON.stringify({ contenu }) });
+        const { email_envoye } = await apiCall(`/api/admin/analyses-portefeuille/${id}/valider`, { method: 'POST' });
+        zoneMessage.innerHTML = email_envoye
+          ? '<p class="success">✅ Envoyée avec succès — le client la recevra par email et dans sa messagerie sur son espace.</p>'
+          : '<p class="success">✅ Enregistrée dans sa messagerie sur son espace. ⚠️ L\'email n\'a pas pu partir (problème technique côté serveur d\'envoi) — le client verra tout de même le message en se connectant.</p>';
+        await new Promise(r => setTimeout(r, 1500)); // laisse le temps de lire la confirmation avant que la carte disparaisse
+        await chargerAnalyses();
+      } catch (e) {
+        zoneMessage.innerHTML = `<p class="error">❌ Échec de l'envoi : ${e.message}</p>`;
+        bouton.disabled = false;
+        bouton.textContent = '✅ Valider et envoyer';
+      }
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerAnalyses();
+    })();
+  </script>
+</body>
+</html>

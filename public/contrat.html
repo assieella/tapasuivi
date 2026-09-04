@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrat d'accompagnement — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div></div>
+  <div class="container" style="max-width: 780px;">
+
+    <div class="card" id="contrat-card">
+      <h1>Contrat d'accompagnement BRVM STARTER</h1>
+      <p style="color:#B8891E; font-weight:600;">⚠️ La lecture et la signature de ce contrat sont nécessaires pour accéder à votre espace.</p>
+      <div id="contrat-texte" style="font-size:14px; line-height:1.7;"><p>Chargement...</p></div>
+
+      <div id="zone-signature" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border); display:none;">
+        <p>☐ J'ai lu et j'accepte le contrat d'accompagnement BRVM STARTER et notamment les conditions relatives à sa durée et à son renouvellement.</p>
+        <label>Pour confirmer, tapez exactement : <strong>lu et approuvé</strong></label>
+        <input type="text" id="confirmation" placeholder="lu et approuvé">
+        <button onclick="signer()" style="margin-top:12px;">Signer et accéder à mon espace</button>
+        <div id="signature-erreur"></div>
+      </div>
+
+      <div id="deja-signe" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+        <p style="color:#0B6E4F;">✅ Vous avez déjà signé ce contrat.</p>
+        <a href="/dashboard.html"><button>Retourner à mon espace</button></a>
+      </div>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      // Cette page utilise volontairement sa propre vérification (pas requireLogin standard),
+      // car apiCall() redirige automatiquement ici si le contrat n'est pas signé — il ne faut
+      // donc jamais rediriger ailleurs depuis cette page tant qu'on n'est pas sûr du statut.
+      let info;
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/connexion.html'; return; }
+      } catch { window.location.href = '/connexion.html'; return; }
+
+      try {
+        info = await (await fetch('/api/contrat', { credentials: 'include' })).json();
+      } catch (e) {
+        document.getElementById('contrat-texte').innerHTML = '<p class="error">Impossible de charger votre contrat pour le moment.</p>';
+        return;
+      }
+
+      document.getElementById('contrat-texte').innerHTML = `
+        <p><strong>Entre :</strong> TAPA CONSEIL, ci-après dénommé « TAPA CONSEIL »,<br>
+        <strong>Et</strong><br>
+        Nom et prénoms : <strong>${info.nom_complet}</strong><br>
+        Ci-après dénommé(e) « l'Investisseur ».</p>
+
+        <h3>Article 1 – Objet</h3>
+        <p>Le présent contrat définit les conditions de participation au Programme d'accompagnement BRVM STARTER, comprenant notamment la formation en ligne, les outils pédagogiques, le suivi et les séances d'accompagnement prévus dans l'offre souscrite.</p>
+
+        <h3>Article 2 – Durée de l'accompagnement</h3>
+        <p>L'accompagnement est valable pendant la durée correspondant à la formule souscrite, à compter de la date d'activation du programme. L'Investisseur s'engage à réaliser les différentes étapes, transmettre les informations demandées et solliciter ses séances d'accompagnement pendant cette période de validité.</p>
+
+        <h3>Article 3 – Respect des délais</h3>
+        <p>Les prestations doivent être utilisées pendant la période prévue au contrat. Lorsque l'Investisseur ne réalise pas les étapes demandées, ne transmet pas les informations nécessaires, ne répond pas aux sollicitations ou ne prend pas ses rendez-vous dans les délais impartis, la durée du programme n'est pas automatiquement prolongée. À l'expiration de la période d'accompagnement, les prestations de suivi non utilisées sont considérées comme expirées. Pour bénéficier à nouveau de l'accompagnement, l'Investisseur devra procéder au renouvellement de son programme selon les conditions tarifaires en vigueur.</p>
+
+        <h3>Article 4 – Retard imputable à TAPA CONSEIL</h3>
+        <p>Lorsque l'impossibilité de réaliser une prestation dans les délais est directement imputable à TAPA CONSEIL, l'Investisseur ne perd pas son droit à cette prestation. TAPA CONSEIL proposera alors son report ou, lorsque cela est nécessaire, une prolongation appropriée de la période d'accompagnement.</p>
+
+        <h3>Article 5 – Responsabilité de l'investisseur</h3>
+        <p>Les décisions d'achat, de conservation ou de vente de titres restent sous la responsabilité exclusive de l'Investisseur. Le programme BRVM STARTER a une vocation éducative et d'accompagnement et ne constitue pas une garantie de rendement, de plus-value ou de performance financière.</p>
+
+        <h3>Article 6 – Engagement de l'investisseur</h3>
+        <p>En validant son inscription, l'Investisseur reconnaît :</p>
+        <ul>
+          <li>avoir pris connaissance de la durée de son programme ;</li>
+          <li>comprendre que les prestations doivent être utilisées pendant cette période ;</li>
+          <li>comprendre qu'une absence, une indisponibilité ou un retard de sa part ne prolonge pas automatiquement son accompagnement ;</li>
+          <li>accepter qu'à l'expiration de son programme, tout nouvel accompagnement puisse nécessiter un renouvellement.</li>
+        </ul>
+
+        <h3>Article 7 – Acceptation numérique</h3>
+        <p>La validation ci-dessous vaut acceptation des présentes conditions d'accompagnement.</p>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+        <p>
+          <strong>Formule souscrite :</strong> ${info.formule}<br>
+          <strong>Date de début :</strong> ${new Date(info.date_debut).toLocaleDateString('fr-FR')}<br>
+          <strong>Date de fin :</strong> ${new Date(info.date_fin).toLocaleDateString('fr-FR')}
+        </p>
+      `;
+
+      if (info.deja_signe) {
+        document.getElementById('deja-signe').style.display = 'block';
+      } else {
+        document.getElementById('zone-signature').style.display = 'block';
+      }
+    })();
+
+    async function signer() {
+      const confirmation = document.getElementById('confirmation').value;
+      const elErreur = document.getElementById('signature-erreur');
+      elErreur.innerHTML = '';
+      try {
+        await apiCall('/api/contrat/signer', { method: 'POST', body: JSON.stringify({ confirmation }) });
+        window.location.href = '/dashboard.html';
+      } catch (e) { elErreur.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+  </script>
+</body>
+</html>

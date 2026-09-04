@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fonds OPCVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
+  <div class="container">
+
+    <div class="card">
+      <h1>💼 Fonds OPCVM / FCP</h1>
+      <p style="font-size:13px; color:#666;">Contrairement aux actions, la valeur liquidative (VL) des fonds se met à jour périodiquement, pas quotidiennement — mets-la à jour quand tu as l'information, pas besoin d'un rythme fixe.</p>
+    </div>
+
+    <div class="card">
+      <h2>Fonds existants</h2>
+      <p style="font-size:13px; color:#666;">Vérifie ici s'il y a des doublons (deux fonds au nom identique ou très proche) et supprime ceux en trop.</p>
+      <div id="liste-fonds-existants"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>1. Ajouter un nouveau fonds</h2>
+      <label>Nom du fonds</label><input type="text" id="fonds-nom" placeholder="Ex: FCP CORIS ACTIONS">
+      <label>Société de gestion</label><input type="text" id="fonds-societe" placeholder="Ex: CORIS ASSET MANAGEMENT">
+      <label>Catégorie</label>
+      <select id="fonds-categorie">
+        <option value="Dynamique">Dynamique</option>
+        <option value="Diversifié">Diversifié</option>
+        <option value="Prudent">Prudent</option>
+        <option value="Monétaire">Monétaire</option>
+        <option value="Obligataire">Obligataire</option>
+      </select>
+      <button onclick="ajouterFonds()">Ajouter ce fonds</button>
+      <div id="resultat-fonds"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Mettre à jour la valeur liquidative d'un fonds</h2>
+      <label>Fonds</label><select id="select-fonds"></select>
+      <label>Date de la VL</label><input type="date" id="vl-date">
+      <label>Valeur liquidative (FCFA)</label><input type="number" step="0.01" id="vl-valeur" placeholder="Ex: 15023.34">
+      <label>Performance depuis le début de l'année (%)</label><input type="number" step="0.01" id="vl-ytd" placeholder="Ex: 42.87">
+      <label>Performance sur 1 an (%)</label><input type="number" step="0.01" id="vl-1an" placeholder="Ex: 55.91">
+      <label>Performance sur 3 ans (%)</label><input type="number" step="0.01" id="vl-3ans" placeholder="Ex: 121.28">
+      <button onclick="ajouterVL()">Enregistrer cette VL</button>
+      <div id="resultat-vl"></div>
+      <div id="historique-vl" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Mettre à jour plusieurs fonds d'un coup (copier-coller)</h2>
+      <p style="font-size:13px; color:#666;">Va sur <a href="https://richbourse.com/common/variation/opcvm" target="_blank">richbourse.com</a>, sélectionne et copie le tableau des fonds, puis colle-le ci-dessous. Le système reconnaît automatiquement les fonds que tu as déjà créés — il ne crée jamais un nouveau fonds tout seul.</p>
+      <textarea id="collage-opcvm" rows="8" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:12px;" placeholder="Colle ici le tableau copié depuis richbourse.com"></textarea>
+      <button onclick="collerOPCVM()">Analyser et enregistrer</button>
+      <div id="resultat-collage"></div>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let fondsDisponibles = [];
+
+    async function chargerFonds() {
+      const { fonds } = await apiCall('/api/admin/fonds-opcvm');
+      fondsDisponibles = fonds;
+      const options = '<option value="">— Choisir —</option>' + fonds.map(f => `<option value="${f.id}">${f.nom} (${f.societe_gestion || 'société non renseignée'})</option>`).join('');
+      document.getElementById('select-fonds').innerHTML = options;
+
+      const elListe = document.getElementById('liste-fonds-existants');
+      if (!fonds.length) { elListe.innerHTML = '<p style="color:#999;">Aucun fonds créé pour le moment.</p>'; return; }
+      elListe.innerHTML = fonds.map(f => `
+        <div class="titre-row">
+          <span class="titre-nom"><strong>${f.nom}</strong> — ${f.societe_gestion || 'société non renseignée'} ${f.categorie ? `(${f.categorie})` : ''}</span>
+          <button onclick="supprimerFonds(${f.id}, '${f.nom.replace(/'/g, "\\'")}')" style="width:auto; padding:4px 12px; font-size:13px; background:#C0392B;">Supprimer</button>
+        </div>
+      `).join('');
+    }
+
+    async function supprimerFonds(id, nom) {
+      if (!confirm(`Supprimer le fonds "${nom}" ? Son historique de VL sera aussi supprimé.`)) return;
+      try {
+        await apiCall(`/api/admin/fonds-opcvm/${id}`, { method: 'DELETE' });
+        await chargerFonds();
+        await chargerHistoriqueVL();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function ajouterFonds() {
+      const el = document.getElementById('resultat-fonds');
+      const nom = document.getElementById('fonds-nom').value;
+      if (!nom.trim()) { el.innerHTML = '<p class="error">Le nom est obligatoire.</p>'; return; }
+      try {
+        await apiCall('/api/admin/fonds-opcvm', {
+          method: 'POST',
+          body: JSON.stringify({
+            nom, societe_gestion: document.getElementById('fonds-societe').value,
+            categorie: document.getElementById('fonds-categorie').value
+          })
+        });
+        document.getElementById('fonds-nom').value = '';
+        document.getElementById('fonds-societe').value = '';
+        el.innerHTML = '<p class="success">✅ Fonds ajouté.</p>';
+        await chargerFonds();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function chargerHistoriqueVL() {
+      const fondsId = document.getElementById('select-fonds').value;
+      const el = document.getElementById('historique-vl');
+      if (!fondsId) { el.innerHTML = ''; return; }
+      try {
+        const { historique } = await apiCall(`/api/admin/fonds-opcvm/${fondsId}/vl`);
+        if (!historique.length) { el.innerHTML = '<p style="color:#999;">Aucune VL enregistrée pour ce fonds pour le moment.</p>'; return; }
+        el.innerHTML = '<h3 style="font-size:14px; margin-top:8px;">Historique</h3>' + historique.map(v => `
+          <div class="titre-row" style="display:block;">
+            <strong>${new Date(v.date_vl).toLocaleDateString('fr-FR')}</strong><br>
+            <span style="font-size:13px;">VL : ${v.valeur_liquidative ? Number(v.valeur_liquidative).toLocaleString('fr-FR') + ' FCFA' : '—'} — YTD : ${v.perf_ytd !== null ? v.perf_ytd + '%' : '—'} — 1 an : ${v.perf_1an !== null ? v.perf_1an + '%' : '—'} — 3 ans : ${v.perf_3ans !== null ? v.perf_3ans + '%' : '—'}</span>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function ajouterVL() {
+      const fondsId = document.getElementById('select-fonds').value;
+      const el = document.getElementById('resultat-vl');
+      if (!fondsId) { el.innerHTML = '<p class="error">Choisis d\'abord un fonds.</p>'; return; }
+      try {
+        await apiCall(`/api/admin/fonds-opcvm/${fondsId}/vl`, {
+          method: 'POST',
+          body: JSON.stringify({
+            date_vl: document.getElementById('vl-date').value,
+            valeur_liquidative: document.getElementById('vl-valeur').value,
+            perf_ytd: document.getElementById('vl-ytd').value,
+            perf_1an: document.getElementById('vl-1an').value,
+            perf_3ans: document.getElementById('vl-3ans').value
+          })
+        });
+        el.innerHTML = '<p class="success">✅ Enregistré.</p>';
+        await chargerHistoriqueVL();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function collerOPCVM() {
+      const texte = document.getElementById('collage-opcvm').value;
+      const el = document.getElementById('resultat-collage');
+      if (!texte.trim()) { el.innerHTML = '<p class="error">Colle d\'abord le tableau.</p>'; return; }
+      try {
+        const { mise_a_jour, non_trouves } = await apiCall('/api/admin/fonds-opcvm/coller', { method: 'POST', body: JSON.stringify({ texte }) });
+        let message = `<p class="success">✅ ${mise_a_jour} fonds mis à jour.</p>`;
+        if (non_trouves.length) {
+          message += `<p style="color:#B8891E; font-size:13px;">⚠️ Non trouvés dans le texte collé (vérifie l'orthographe exacte ou crée-les d'abord) : ${non_trouves.join(', ')}</p>`;
+        }
+        el.innerHTML = message;
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      await chargerFonds();
+      document.getElementById('select-fonds').addEventListener('change', chargerHistoriqueVL);
+    })();
+  </script>
+</body>
+</html>

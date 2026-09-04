@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formation TAPA INVEST</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .module-item { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; }
+  .module-item.verrouille { opacity:0.55; }
+  .video-wrap { position:relative; width:100%; padding-top:56.25%; border-radius:8px; overflow:hidden; margin-bottom:10px; }
+  .video-wrap iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+  .lecon-bloc { margin-bottom:24px; }
+  .lecon-bloc h3 { font-size:15px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Formation TAPA INVEST</span></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card" id="liste-modules"><h1>Parcours de formation</h1><p>Chargement...</p></div>
+    <div class="card" id="module-actif" style="display:none;"></div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function chargerListeModules() {
+      let modules;
+      try {
+        ({ modules } = await apiCall('/api/formation'));
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        document.getElementById('liste-modules').innerHTML = `<h1>Parcours de formation</h1><p class="error">${e.message}</p>`;
+        return;
+      }
+      const el = document.getElementById('liste-modules');
+      if (!modules.length) { el.innerHTML = '<h1>Parcours de formation</h1><p style="color:#999;">Aucun module disponible pour le moment.</p>'; return; }
+      el.innerHTML = `
+        <h1>Parcours de formation TAPA INVEST</h1>
+        <p>Regardez les vidéos de chaque module puis validez le quiz pour débloquer le module suivant.</p>
+        ${modules.map(m => `
+          <div class="module-item ${m.debloque ? '' : 'verrouille'}">
+            <span class="titre-module">${m.reussi ? '✅' : (m.debloque ? '▶️' : '🔒')} ${m.titre} <span style="font-weight:400; font-size:12px; color:#777;">(${m.lecons.length} vidéo${m.lecons.length > 1 ? 's' : ''})</span></span>
+            ${m.debloque ? `<button onclick="ouvrirModule(${m.id})">${m.reussi ? 'Revoir' : 'Commencer'}</button>` : `<span style="font-size:12px; color:#999;">Verrouillé</span>`}
+          </div>
+          ${m.score_pct !== null ? `<p style="font-size:12px; color:#777; margin:-4px 0 8px 6px;">Dernier score : ${m.score_pct}%</p>` : ''}
+        `).join('')}
+      `;
+    }
+    async function ouvrirModule(id) {
+      try {
+        const { module, lecons, questions } = await apiCall(`/api/formation/${id}`);
+        document.getElementById('liste-modules').style.display = 'none';
+        const el = document.getElementById('module-actif');
+        el.style.display = 'block';
+        el.innerHTML = `
+          <button class="btn-secondary" onclick="retourListe()">← Retour au parcours</button>
+          <h1>${module.titre}</h1>
+          ${module.description ? `<p>${module.description}</p>` : ''}
+          ${lecons.map(l => l.type === 'texte'
+            ? `<div class="lecon-bloc"><h3>${l.titre}</h3><div style="background:var(--bg); border-radius:8px; padding:18px; font-size:14px; line-height:1.7;">${l.contenu_texte}</div></div>`
+            : `<div class="lecon-bloc"><h3>${l.titre}</h3><div class="video-wrap"><iframe src="https://www.youtube.com/embed/${l.youtube_id}" allowfullscreen></iframe></div></div>`
+          ).join('')}
+          ${questions.length ? `
+            <h2>Quiz — ${module.seuil_reussite}% de bonnes réponses requis</h2>
+            <form id="quiz-form">
+              ${questions.map((q, i) => `<div class="question"><p><strong>${i + 1}. ${q.question}</strong></p>${q.options.map((opt, j) => `<label class="option"><input type="radio" name="q${i}" value="${j}" required> ${opt}</label>`).join('')}</div>`).join('')}
+              <button type="submit">Valider mes réponses</button>
+            </form>
+          ` : `<div class="alert">Le quiz de ce module n'est pas encore disponible. Revenez bientôt !</div>`}
+          <div id="resultat-quiz"></div>
+        `;
+        const form = document.getElementById('quiz-form');
+        if (form) {
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const reponses = questions.map((q, i) => Number(document.querySelector(`input[name="q${i}"]:checked`).value));
+            const r = await apiCall(`/api/formation/${id}/repondre`, { method: 'POST', body: JSON.stringify({ reponses }) });
+            const elRes = document.getElementById('resultat-quiz');
+            if (r.reussi) elRes.innerHTML = `<div class="success"><h3>✅ Module validé ! Score : ${r.bonnes_reponses}/${r.total_questions} (${r.score_pct}%)</h3><p>${r.message_niveau}</p><p>Le module suivant est débloqué.</p><button onclick="retourListe()">Retour au parcours</button></div>`;
+            else elRes.innerHTML = `<div class="alert"><h3>Score : ${r.bonnes_reponses}/${r.total_questions} (${r.score_pct}%)</h3><p>${r.message_niveau}</p><p>Revoyez les vidéos et retentez le quiz autant de fois que nécessaire — vous pouvez recommencer sans limite.</p><button onclick="ouvrirModule(${id})">Réessayer</button></div>`;
+          });
+        }
+      } catch (e) { alert(e.message); }
+    }
+    async function retourListe() { document.getElementById('module-actif').style.display = 'none'; document.getElementById('liste-modules').style.display = 'block'; await chargerListeModules(); }
+    (async () => { const user = await requireLogin(); if (!user) return; await chargerListeModules(); })();
+  </script>
+</body>
+</html>

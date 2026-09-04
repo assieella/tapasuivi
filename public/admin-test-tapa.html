@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads TEST TAPA — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>📋 Leads TEST TAPA</h1>
+      <p style="font-size:13px; color:#666;">Toutes les personnes ayant fait le test "Suis-je prête à investir ?", avec leur score et leur email — les plus prometteurs (🟢) sont probablement les plus proches d'acheter BRVM Starter.</p>
+      <div id="liste-leads"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const LABELS_PALIER = { pret: '🟢 Prête', presque_pret: '🟡 Presque prête', pas_encore: '🔴 Pas encore' };
+
+    async function chargerLeads() {
+      const el = document.getElementById('liste-leads');
+      try {
+        const { reponses } = await apiCall('/api/admin/test-tapa');
+        if (!reponses.length) { el.innerHTML = '<p style="color:#999;">Aucune réponse pour le moment.</p>'; return; }
+        el.innerHTML = reponses.map(r => `
+          <div class="titre-row" style="display:block;">
+            <strong>${r.prenom || '(prénom non renseigné)'}</strong> — ${LABELS_PALIER[r.palier]} (${r.score}/100)
+            ${r.contacte ? '<span style="color:#0B6E4F; font-size:12px;"> ✅ Contacté</span>' : `<button onclick="marquerContacte(${r.id})" style="width:auto; padding:2px 10px; font-size:12px; margin-left:8px;">Marquer contacté</button>`}
+            <br><span style="font-size:13px; color:#666;">📧 ${r.email}${r.whatsapp ? ` — 📱 ${r.whatsapp}` : ''} — ${new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function marquerContacte(id) {
+      await apiCall(`/api/admin/test-tapa/${id}/contacte`, { method: 'POST' });
+      await chargerLeads();
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      await chargerLeads();
+    })();
+  </script>
+</body>
+</html>

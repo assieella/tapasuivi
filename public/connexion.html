@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Suivi BRVM Starter</span></div>
+    <a href="/">Accueil</a>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h1>Espace client</h1>
+      <p>Connectez-vous avec l'email et le mot de passe qui vous ont été transmis par TAPA CONSEIL après votre règlement.</p>
+      <form id="form-login">
+        <label>Email</label>
+        <input type="email" id="login-email" required>
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" required>
+        <button type="submit">Se connecter</button>
+        <div class="error" id="login-error"></div>
+      </form>
+      <p style="font-size:13px; margin-top:10px;"><a href="/mot-de-passe-oublie.html">Mot de passe oublié ?</a></p>
+      <p style="font-size:13px; color:#777; margin-top:20px;">
+        Pas encore client ? Découvrez le programme sur
+        <a href="/vente.html" style="color:var(--navy); font-weight:600;">TAPA INVEST</a>
+        ou regardez nos <a href="/gratuit.html" style="color:var(--navy); font-weight:600;">vidéos gratuites</a>.
+      </p>
+      <p style="font-size:12px; color:#aaa; margin-top:10px;">
+        <a href="/admin-connexion.html" style="color:#aaa;">Espace TAPA CONSEIL (admin)</a>
+      </p>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      try {
+        const { user } = await apiCall('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        window.location.href = user.role === 'saisie' ? '/admin-saisie.html' : '/dashboard.html';
+      }
+      catch (err) { document.getElementById('login-error').textContent = err.message; }
+    });
+  </script>
+</body>
+</html>

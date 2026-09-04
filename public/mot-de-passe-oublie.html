@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mot de passe oublié — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/connexion.html">← Connexion</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>Mot de passe oublié</h1>
+      <p>Indique l'email de ton compte — si un compte existe, tu recevras un lien pour choisir un nouveau mot de passe.</p>
+      <form id="form-demande">
+        <label>Email</label>
+        <input type="email" id="email" required>
+        <button type="submit">Recevoir le lien de réinitialisation</button>
+        <div id="resultat"></div>
+      </form>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('form-demande').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const elResultat = document.getElementById('resultat');
+      elResultat.innerHTML = '';
+      try {
+        const { message } = await apiCall('/api/auth/mot-de-passe-oublie', { method: 'POST', body: JSON.stringify({ email }) });
+        elResultat.innerHTML = `<p class="success">${message}</p>`;
+        document.getElementById('form-demande').querySelector('button').disabled = true;
+      } catch (e) { elResultat.innerHTML = `<p class="error">${e.message}</p>`; }
+    });
+  </script>
+</body>
+</html>
