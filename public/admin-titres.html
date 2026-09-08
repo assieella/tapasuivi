@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des titres BRVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office — Titres BRVM</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>1. Mettre à jour les cours du jour</h1>
+      <p>Va sur <a href="https://www.brvm.org/fr/marche-des-actions" target="_blank">la page "Marché des actions" de brvm.org</a>, sélectionne et copie le bloc des cotations, puis colle-le ci-dessous.</p>
+      <textarea id="colle-cours" rows="10" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font-family:monospace;" placeholder="ABJC 2 950 1,36%&#10;BICB 6 385 -1,33%&#10;..."></textarea>
+      <button onclick="collerCours()">Enregistrer les cours du jour</button>
+      <div id="resultat-colle"></div>
+    </div>
+    <div class="card">
+      <h2>2. Compléter la fiche d'un titre</h2>
+      <label>Choisir un titre</label>
+      <select id="select-titre"></select>
+      <div id="form-fiche"></div>
+    </div>
+    <div class="card">
+      <h2>3. Ajouter un dividende</h2>
+      <label>Titre</label><select id="select-titre-dividende"></select>
+      <label>Année</label><input type="number" id="div-annee" placeholder="2025">
+      <label>Montant par action (FCFA)</label><input type="number" id="div-montant" placeholder="250">
+      <button onclick="ajouterDividende()">Enregistrer le dividende</button>
+      <div id="resultat-dividende"></div>
+    </div>
+    <div class="card">
+      <h2>4. Publier une étude de titre</h2>
+      <label>Titre</label><select id="select-titre-etude"></select>
+      <button class="btn-gold" onclick="genererEtudeIA()">✨ Générer un brouillon avec l'IA</button>
+      <div id="resultat-generation"></div>
+      <label>Titre de l'étude</label><input type="text" id="etude-titre" placeholder="Ex: SONATEL, un dividende toujours solide">
+      <label>Contenu</label><textarea id="etude-contenu" rows="8" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"></textarea>
+      <button onclick="publierEtude()">Publier l'étude</button>
+      <div id="resultat-etude"></div>
+    </div>
+    <div class="card">
+      <h2>5. Données financières fondamentales — base du Score TAPA INVEST</h2>
+      <p style="font-size:13px; color:#666;">À saisir depuis les rapports annuels/semestriels officiels de la société (disponibles sur brvm.org, rubrique "Rapports sociétés cotées"). Une ligne par année.</p>
+      <label>Titre</label><select id="select-titre-finance"></select>
+      <label>Année</label><input type="number" id="finance-annee" placeholder="2025">
+      <label>Chiffre d'affaires (FCFA)</label><input type="number" id="finance-ca" placeholder="Ex: 450000000">
+      <label>Bénéfice net (FCFA)</label><input type="number" id="finance-benefice" placeholder="Ex: 32000000">
+      <label>Capitaux propres (FCFA)</label><input type="number" id="finance-capitaux" placeholder="Ex: 180000000">
+      <label>Dettes totales (FCFA)</label><input type="number" id="finance-dettes" placeholder="Ex: 60000000">
+      <button onclick="ajouterDonneesFinancieres()">Enregistrer cette année</button>
+      <div id="resultat-finance"></div>
+      <div id="historique-finance" style="margin-top:16px;"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    function formaterMontant(n) {
+      if (n === null || n === undefined) return '—';
+      return Number(n).toLocaleString('fr-FR') + ' FCFA';
+    }
+    async function chargerHistoriqueFinance() {
+      const ticker = document.getElementById('select-titre-finance').value;
+      const el = document.getElementById('historique-finance');
+      if (!ticker) { el.innerHTML = ''; return; }
+      try {
+        const { donnees } = await apiCall(`/api/admin/titres/${ticker}/donnees-financieres`);
+        if (!donnees.length) { el.innerHTML = '<p style="color:#999;">Aucune donnée enregistrée pour ce titre pour le moment.</p>'; return; }
+        // Tri du plus ancien au plus récent pour calculer la croissance d'une année sur l'autre.
+        const parAnneeCroissante = [...donnees].sort((a, b) => a.annee - b.annee);
+        el.innerHTML = '<h3 style="font-size:14px; margin-top:8px;">Historique saisi pour ce titre</h3>' +
+          parAnneeCroissante.map((d, i) => {
+            const precedent = parAnneeCroissante[i - 1];
+            let croissanceCA = '';
+            if (precedent && precedent.chiffre_affaires && d.chiffre_affaires) {
+              const pct = Math.round(((d.chiffre_affaires - precedent.chiffre_affaires) / precedent.chiffre_affaires) * 1000) / 10;
+              croissanceCA = ` <span style="color:${pct >= 0 ? '#0B6E4F' : '#C0392B'};">(${pct >= 0 ? '+' : ''}${pct}% vs ${precedent.annee})</span>`;
+            }
+            return `<div class="titre-row" style="display:block;">
+              <strong>${d.annee}</strong>
+              ${d.valide ? '<span style="color:#0B6E4F; font-size:12px;"> ✅ Validé</span>' : `<span style="color:#B8891E; font-size:12px;"> ⏳ En attente de validation${d.saisi_par ? ` (saisi par ${d.saisi_par})` : ''}</span> <button onclick="validerDonnee(${d.id})" style="width:auto; padding:2px 10px; font-size:12px; margin-left:6px;">Valider</button>`}
+              <br>
+              <span style="font-size:13px;">CA : ${formaterMontant(d.chiffre_affaires)}${croissanceCA} — Bénéfice net : ${formaterMontant(d.benefice_net)} — Capitaux propres : ${formaterMontant(d.capitaux_propres)} — Dettes : ${formaterMontant(d.dettes_totales)}</span>
+            </div>`;
+          }).reverse().join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function validerDonnee(id) {
+      try {
+        await apiCall(`/api/admin/donnees-financieres/${id}/valider`, { method: 'POST' });
+        await chargerHistoriqueFinance();
+      } catch (e) { alert(e.message); }
+    }
+
+    async function ajouterDonneesFinancieres() {
+      const ticker = document.getElementById('select-titre-finance').value;
+      const el = document.getElementById('resultat-finance');
+      if (!ticker) { el.innerHTML = '<p class="error">Choisis d\'abord un titre.</p>'; return; }
+      try {
+        await apiCall(`/api/admin/titres/${ticker}/donnees-financieres`, {
+          method: 'POST',
+          body: JSON.stringify({
+            annee: document.getElementById('finance-annee').value,
+            chiffre_affaires: document.getElementById('finance-ca').value,
+            benefice_net: document.getElementById('finance-benefice').value,
+            capitaux_propres: document.getElementById('finance-capitaux').value,
+            dettes_totales: document.getElementById('finance-dettes').value
+          })
+        });
+        el.innerHTML = '<p class="success">✅ Enregistré.</p>';
+        document.getElementById('finance-annee').value = '';
+        document.getElementById('finance-ca').value = '';
+        document.getElementById('finance-benefice').value = '';
+        document.getElementById('finance-capitaux').value = '';
+        document.getElementById('finance-dettes').value = '';
+        await chargerHistoriqueFinance();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    let titres = [];
+    async function chargerTitres() {
+      const { titres: liste } = await apiCall('/api/titres');
+      titres = liste;
+      const options = liste.map(t => `<option value="${t.ticker}">${t.ticker} — ${t.nom}</option>`).join('');
+      for (const id of ['select-titre', 'select-titre-dividende', 'select-titre-etude', 'select-titre-finance']) document.getElementById(id).innerHTML = options;
+      document.getElementById('select-titre-finance').addEventListener('change', chargerHistoriqueFinance);
+      chargerHistoriqueFinance();
+      afficherFormulaireFiche();
+    }
+    function afficherFormulaireFiche() {
+      const ticker = document.getElementById('select-titre').value;
+      const t = titres.find(x => x.ticker === ticker);
+      if (!t) return;
+      document.getElementById('form-fiche').innerHTML = `
+        <label>Nom complet</label><input type="text" id="f-nom" value="${t.nom || ''}">
+        <label>Secteur</label><input type="text" id="f-secteur" value="${t.secteur || ''}">
+        <label>Pays</label><input type="text" id="f-pays" value="${t.pays || ''}">
+        <label>Date d'introduction en bourse</label><input type="date" id="f-date-intro" value="${t.date_introduction ? t.date_introduction.slice(0,10) : ''}">
+        <label>Description</label><textarea id="f-description" rows="4" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">${t.description || ''}</textarea>
+        <button onclick="enregistrerFiche()">Enregistrer la fiche</button>
+        <div id="resultat-fiche"></div>`;
+    }
+    document.getElementById('select-titre').addEventListener('change', afficherFormulaireFiche);
+    async function enregistrerFiche() {
+      const ticker = document.getElementById('select-titre').value;
+      try {
+        await apiCall(`/api/admin/titres/${ticker}`, { method: 'PUT', body: JSON.stringify({
+          nom: document.getElementById('f-nom').value, secteur: document.getElementById('f-secteur').value,
+          pays: document.getElementById('f-pays').value, date_introduction: document.getElementById('f-date-intro').value || null,
+          description: document.getElementById('f-description').value }) });
+        document.getElementById('resultat-fiche').innerHTML = '<p class="success">Fiche enregistrée.</p>';
+        await chargerTitres();
+      } catch (e) { document.getElementById('resultat-fiche').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function collerCours() {
+      const texte = document.getElementById('colle-cours').value;
+      try {
+        const r = await apiCall('/api/admin/cours/coller', { method: 'POST', body: JSON.stringify({ texte }) });
+        let msg = `<p class="success">${r.inseres} cours enregistrés sur ${r.total_lignes_detectees} lignes détectées.</p>`;
+        if (r.fiches_completees > 0) msg += `<p class="success">✅ ${r.fiches_completees} fiche(s) complétée(s) automatiquement (nom + pays).</p>`;
+        if (r.lignes_non_reconnues.length) msg += `<p class="error">Lignes non reconnues : ${r.lignes_non_reconnues.join(', ')}</p>`;
+        if (r.tickers_inconnus.length) msg += `<p class="error">Tickers inconnus (ignorés) : ${r.tickers_inconnus.join(', ')}</p>`;
+        document.getElementById('resultat-colle').innerHTML = msg;
+      } catch (e) { document.getElementById('resultat-colle').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function ajouterDividende() {
+      const ticker = document.getElementById('select-titre-dividende').value;
+      try {
+        await apiCall(`/api/admin/titres/${ticker}/dividendes`, { method: 'POST', body: JSON.stringify({ annee: Number(document.getElementById('div-annee').value), montant_par_action: Number(document.getElementById('div-montant').value) }) });
+        document.getElementById('resultat-dividende').innerHTML = '<p class="success">Dividende enregistré.</p>';
+      } catch (e) { document.getElementById('resultat-dividende').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function genererEtudeIA() {
+      const ticker = document.getElementById('select-titre-etude').value;
+      const el = document.getElementById('resultat-generation');
+      el.innerHTML = '<p style="color:#666;">Génération en cours (quelques secondes)...</p>';
+      try {
+        const r = await apiCall(`/api/admin/titres/${ticker}/etudes/generer`, { method: 'POST' });
+        document.getElementById('etude-titre').value = r.titre_suggere;
+        document.getElementById('etude-contenu').value = r.contenu;
+        el.innerHTML = `<p class="success">Brouillon généré — relis-le avant de publier. ${r.plus_bas !== null ? `(Plus bas observé : ${r.plus_bas} FCFA, plus haut : ${r.plus_haut} FCFA, calculés à partir de tes cours saisis)` : ''}</p>`;
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function publierEtude() {
+      const ticker = document.getElementById('select-titre-etude').value;
+      try {
+        await apiCall(`/api/admin/titres/${ticker}/etudes`, { method: 'POST', body: JSON.stringify({ titre: document.getElementById('etude-titre').value, contenu: document.getElementById('etude-contenu').value }) });
+        document.getElementById('resultat-etude').innerHTML = '<p class="success">Étude publiée.</p>';
+        document.getElementById('etude-titre').value = ''; document.getElementById('etude-contenu').value = '';
+      } catch (e) { document.getElementById('resultat-etude').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerTitres();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion de la formation — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office — Formation</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>1. Créer un module</h1>
+      <p style="font-size:14px; color:#666;">Un module regroupe plusieurs vidéos (leçons) et se termine par un seul quiz.</p>
+      <label>Ordre (position dans le parcours)</label><input type="number" id="m-ordre" min="1">
+      <label>Titre du module</label><input type="text" id="m-titre" placeholder="Ex: MODULE I : LE MARCHÉ BOURSIER">
+      <label>Description (optionnelle)</label><input type="text" id="m-description">
+      <label>Seuil de réussite du quiz (%)</label><input type="number" id="m-seuil" value="60" min="1" max="100">
+      <button onclick="creerModule()">Créer le module</button>
+      <div id="resultat-module"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Ajouter une leçon (vidéo) à un module</h2>
+      <label>Module</label>
+      <select id="select-module-lecon"></select>
+      <label>Ordre de la leçon</label><input type="number" id="l-ordre" value="1" min="1">
+      <label>Titre de la leçon</label><input type="text" id="l-titre" placeholder="Ex: Leçon 1 : Les acteurs">
+      <label>Type de contenu</label>
+      <select id="l-type" onchange="basculerTypeLecon()">
+        <option value="video">Vidéo YouTube</option>
+        <option value="texte">Texte</option>
+      </select>
+      <div id="l-video-zone">
+        <label>Identifiant vidéo YouTube</label><input type="text" id="l-youtube" placeholder="Ex: dF0stIfmF3M">
+      </div>
+      <div id="l-texte-zone" style="display:none;">
+        <label>Contenu (texte)</label>
+        <textarea id="l-contenu-texte" rows="10" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;" placeholder="Colle ici le texte de la leçon..."></textarea>
+      </div>
+      <button onclick="ajouterLecon()">Ajouter la leçon</button>
+      <div id="resultat-lecon"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Ajouter le quiz d'un module</h2>
+      <label>Module</label>
+      <select id="select-module-quiz"></select>
+      <div id="questions-zone"></div>
+      <button type="button" class="btn-secondary" onclick="ajouterQuestion()">+ Ajouter une question</button><br>
+      <button onclick="enregistrerQuiz()">Enregistrer le quiz de ce module</button>
+      <div id="resultat-quiz-admin"></div>
+    </div>
+
+    <div class="card"><h2>Modules existants</h2><div id="liste-modules"><p>Chargement...</p></div></div>
+    <div class="card"><h2>Progression des clients</h2><div id="progression-clients"><p>Chargement...</p></div></div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let modulesExistants = [];
+    let compteurQuestions = 0;
+
+    async function creerModule() {
+      try {
+        await apiCall('/api/admin/formation/modules', { method: 'POST', body: JSON.stringify({
+          ordre: Number(document.getElementById('m-ordre').value), titre: document.getElementById('m-titre').value,
+          description: document.getElementById('m-description').value, seuil_reussite: Number(document.getElementById('m-seuil').value)
+        }) });
+        document.getElementById('resultat-module').innerHTML = '<p class="success">Module créé. Ajoute maintenant ses leçons ci-dessous.</p>';
+        document.getElementById('m-titre').value = ''; document.getElementById('m-description').value = '';
+        await chargerModules();
+      } catch (e) { document.getElementById('resultat-module').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    function basculerTypeLecon() {
+      const type = document.getElementById('l-type').value;
+      document.getElementById('l-video-zone').style.display = type === 'video' ? 'block' : 'none';
+      document.getElementById('l-texte-zone').style.display = type === 'texte' ? 'block' : 'none';
+    }
+
+    async function ajouterLecon() {
+      const moduleId = document.getElementById('select-module-lecon').value;
+      const type = document.getElementById('l-type').value;
+      try {
+        await apiCall(`/api/admin/formation/modules/${moduleId}/lecons`, { method: 'POST', body: JSON.stringify({
+          ordre: Number(document.getElementById('l-ordre').value), titre: document.getElementById('l-titre').value,
+          type, youtube_id: document.getElementById('l-youtube').value.trim(),
+          contenu_texte: document.getElementById('l-contenu-texte').value
+        }) });
+        document.getElementById('resultat-lecon').innerHTML = '<p class="success">Leçon ajoutée.</p>';
+        document.getElementById('l-titre').value = ''; document.getElementById('l-youtube').value = ''; document.getElementById('l-contenu-texte').value = '';
+        await chargerModules();
+      } catch (e) { document.getElementById('resultat-lecon').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    function ajouterQuestion(q = { question: '', options: ['', ''], bonne_reponse: 0 }) {
+      const id = compteurQuestions++;
+      const div = document.createElement('div');
+      div.className = 'question'; div.id = `question-${id}`;
+      div.innerHTML = `
+        <label>Question</label><input type="text" class="q-texte" value="${q.question}">
+        <label>Options (cochez la bonne réponse)</label>
+        <div class="q-options">${q.options.map((opt, i) => `<div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;"><input type="radio" name="bonne-${id}" value="${i}" ${i === q.bonne_reponse ? 'checked' : ''}><input type="text" class="q-option" value="${opt}" style="flex:1;"></div>`).join('')}</div>
+        <button type="button" class="btn-secondary" onclick="ajouterOption(${id})">+ Option</button>
+        <button type="button" class="btn-secondary" onclick="document.getElementById('question-${id}').remove()">Supprimer la question</button>
+        <hr style="margin:16px 0; border:none; border-top:1px solid var(--border);">`;
+      document.getElementById('questions-zone').appendChild(div);
+    }
+    function ajouterOption(id) {
+      const zone = document.querySelector(`#question-${id} .q-options`);
+      const index = zone.children.length;
+      const div = document.createElement('div');
+      div.style = 'display:flex; gap:8px; align-items:center; margin-bottom:6px;';
+      div.innerHTML = `<input type="radio" name="bonne-${id}" value="${index}"><input type="text" class="q-option" style="flex:1;">`;
+      zone.appendChild(div);
+    }
+    function lireQuestions() {
+      return [...document.getElementById('questions-zone').children].map(div => {
+        const question = div.querySelector('.q-texte').value.trim();
+        const options = [...div.querySelectorAll('.q-option')].map(i => i.value.trim());
+        const bonneRadio = div.querySelector('input[type=radio]:checked');
+        return { question, options, bonne_reponse: bonneRadio ? Number(bonneRadio.value) : 0 };
+      }).filter(q => q.question && q.options.every(o => o));
+    }
+    async function enregistrerQuiz() {
+      const moduleId = document.getElementById('select-module-quiz').value;
+      const module = modulesExistants.find(m => String(m.id) === String(moduleId));
+      const questions = lireQuestions();
+      if (!questions.length) { alert('Ajoute au moins une question complète.'); return; }
+      try {
+        await apiCall(`/api/admin/formation/modules/${moduleId}`, { method: 'PUT', body: JSON.stringify({
+          ordre: module.ordre, titre: module.titre, description: module.description,
+          seuil_reussite: module.seuil_reussite, actif: module.actif, questions
+        }) });
+        document.getElementById('resultat-quiz-admin').innerHTML = '<p class="success">Quiz enregistré pour ce module.</p>';
+        document.getElementById('questions-zone').innerHTML = '';
+        await chargerModules();
+      } catch (e) { document.getElementById('resultat-quiz-admin').innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function chargerModules() {
+      const { modules } = await apiCall('/api/admin/formation/modules');
+      modulesExistants = modules;
+      const options = modules.map(m => `<option value="${m.id}">${m.ordre}. ${m.titre}</option>`).join('');
+      document.getElementById('select-module-lecon').innerHTML = options;
+      document.getElementById('select-module-quiz').innerHTML = options;
+
+      const el = document.getElementById('liste-modules');
+      if (!modules.length) { el.innerHTML = '<p style="color:#999;">Aucun module créé.</p>'; return; }
+      let html = '';
+      for (const m of modules) {
+        const { lecons } = await apiCall(`/api/admin/formation/modules/${m.id}/lecons`);
+        html += `
+          <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+            <strong>${m.ordre}. ${m.titre}</strong> ${!m.actif ? '<em>(désactivé)</em>' : ''} — ${m.questions.length} question(s) de quiz
+            <ul style="margin:8px 0 0 20px; font-size:14px; color:#555;">
+              ${lecons.map(l => `<li>${l.titre} <button class="btn-secondary" style="margin:0 0 0 8px; padding:2px 8px; font-size:12px;" onclick="supprimerLecon(${l.id})">Retirer</button></li>`).join('') || '<li style="color:#999;">Aucune leçon ajoutée</li>'}
+            </ul>
+          </div>`;
+      }
+      el.innerHTML = html;
+    }
+    async function supprimerLecon(id) { await apiCall(`/api/admin/formation/lecons/${id}`, { method: 'DELETE' }); await chargerModules(); }
+
+    async function chargerProgression() {
+      const { progression } = await apiCall('/api/admin/formation/progression');
+      const el = document.getElementById('progression-clients');
+      if (!progression.length) { el.innerHTML = '<p style="color:#999;">Aucun client.</p>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Client</th><th>Modules réussis</th></tr></thead><tbody>${progression.map(p => `<tr><td>${p.full_name}</td><td>${p.modules_reussis} / ${p.total_modules}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerModules(); await chargerProgression();
+    })();
+  </script>
+</body>
+</html>

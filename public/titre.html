@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche titre — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/titres.html">← Toutes les sociétés</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card" id="fiche-content"><p>Chargement...</p></div>
+    <div class="card" id="graphique-content" style="display:none;">
+      <h2>Évolution du cours</h2>
+      <div id="graphique-cours"></div>
+    </div>
+    <div class="card" id="finance-content"></div>
+    <div class="card" id="dividendes-content"></div>
+    <div class="card" id="etudes-content"></div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    // Petit graphique SVG en barres colorées, réutilisable pour n'importe quelle série
+    // (dividendes, chiffre d'affaires, bénéfice net...) — année en abscisse, montant en ordonnée.
+    function graphiqueBarres(donnees, cleAnnee, cleValeur, couleur, unite) {
+      const points = donnees.filter(d => d[cleValeur] !== null && d[cleValeur] !== undefined);
+      if (points.length < 1) return '<p style="color:#999; font-size:13px;">Pas encore assez de données pour un graphique.</p>';
+      const largeur = 600, hauteur = 220, margeGauche = 70, margeBas = 30, margeHaut = 10;
+      const valeurs = points.map(p => Number(p[cleValeur]));
+      const maxValeur = Math.max(...valeurs, 0);
+      const largeurZone = largeur - margeGauche - 10;
+      const largeurBarre = Math.min(60, largeurZone / points.length - 12);
+
+      let svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto; max-width:500px;">`;
+      // Ligne de repère à zéro
+      svg += `<line x1="${margeGauche}" y1="${hauteur - margeBas}" x2="${largeur - 10}" y2="${hauteur - margeBas}" stroke="#ccc" />`;
+      // Étiquette de la valeur maximale, pour donner une échelle
+      svg += `<text x="${margeGauche - 8}" y="${margeHaut + 10}" font-size="10" fill="#999" text-anchor="end">${Math.round(maxValeur).toLocaleString('fr-FR')}</text>`;
+
+      points.forEach((p, i) => {
+        const valeur = Number(p[cleValeur]);
+        const hauteurBarre = maxValeur > 0 ? (valeur / maxValeur) * (hauteur - margeBas - margeHaut) : 0;
+        const x = margeGauche + i * (largeurZone / points.length) + 6;
+        const y = hauteur - margeBas - hauteurBarre;
+        if (valeur === 0) {
+          // Une valeur à 0 mérite un vrai repère visuel — pas une barre invisible qui pourrait
+          // passer pour une donnée manquante alors que c'est une vraie information (ex: aucun
+          // dividende versé cette année-là).
+          svg += `<circle cx="${x + largeurBarre / 2}" cy="${hauteur - margeBas}" r="5" fill="#C0392B" />`;
+          svg += `<text x="${x + largeurBarre / 2}" y="${hauteur - margeBas - 10}" font-size="10" fill="#C0392B" text-anchor="middle" font-weight="600">0</text>`;
+        } else {
+          svg += `<rect x="${x}" y="${y}" width="${largeurBarre}" height="${hauteurBarre}" fill="${couleur}" rx="3" />`;
+          svg += `<text x="${x + largeurBarre / 2}" y="${y - 6}" font-size="10" fill="${couleur}" text-anchor="middle" font-weight="600">${Math.round(valeur).toLocaleString('fr-FR')}</text>`;
+        }
+        svg += `<text x="${x + largeurBarre / 2}" y="${hauteur - margeBas + 14}" font-size="11" fill="#555" text-anchor="middle">${p[cleAnnee]}</text>`;
+      });
+      svg += `</svg>`;
+      return svg;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const ticker = params.get('ticker');
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      if (!ticker) { document.getElementById('fiche-content').innerHTML = '<p class="error">Aucun titre spécifié.</p>'; return; }
+      try {
+        const { titre, historique, dividendes, donnees_financieres, etudes, performance_pct } = await apiCall(`/api/titres/${ticker}`);
+        const dernierCours = historique[0];
+        document.getElementById('fiche-content').innerHTML = `
+          <h1>${titre.nom}</h1>
+          <p><span class="badge badge-equilibre">${titre.ticker}</span> ${titre.secteur ? `— ${titre.secteur}` : ''} ${titre.pays ? `— ${titre.pays}` : ''}</p>
+          ${!titre.fiche_complete ? `<div class="alert">Cette fiche est en cours de vérification par notre équipe — certaines informations seront complétées prochainement.</div>` : ''}
+          ${dernierCours ? `<p style="font-size:22px; margin-top:16px;"><strong>${Number(dernierCours.cours).toLocaleString('fr-FR')} FCFA</strong> <span style="color:${dernierCours.variation_pct > 0 ? '#0B6E4F' : (dernierCours.variation_pct < 0 ? '#C0392B' : '#777')}">${dernierCours.variation_pct > 0 ? '+' : ''}${dernierCours.variation_pct}%</span></p><p style="font-size:13px; color:#777;">Cours au ${new Date(dernierCours.date_cours).toLocaleDateString('fr-FR')}</p>` : '<p style="color:#999;">Aucun cours renseigné pour le moment.</p>'}
+          ${performance_pct !== null ? `<p>Performance sur la période suivie : <strong style="color:${performance_pct >= 0 ? '#0B6E4F' : '#C0392B'}">${performance_pct > 0 ? '+' : ''}${performance_pct}%</strong></p>` : ''}
+          ${titre.date_introduction ? `<p>Date d'introduction en bourse : <strong>${new Date(titre.date_introduction).toLocaleDateString('fr-FR')}</strong></p>` : ''}
+          ${titre.description ? `<p>${titre.description}</p>` : ''}
+        `;
+        const elDiv = document.getElementById('dividendes-content');
+        const dividendesRecentDabord = [...dividendes].reverse();
+        elDiv.innerHTML = dividendes.length ? `<h2>Dividendes distribués</h2>${graphiqueBarres(dividendes, 'annee', 'montant_par_action', '#DAAA37', 'FCFA/action')}<table><thead><tr><th>Année</th><th>Montant par action</th></tr></thead><tbody>${dividendesRecentDabord.map(d => `<tr><td>${d.annee}</td><td>${Number(d.montant_par_action) === 0 ? '<span style="color:#C0392B;">Aucun dividende versé cette année</span>' : Number(d.montant_par_action).toLocaleString('fr-FR') + ' FCFA'}</td></tr>`).join('')}</tbody></table>` : `<h2>Dividendes distribués</h2><p style="color:#999;">Historique des dividendes non encore renseigné pour ce titre.</p>`;
+
+        // Graphique du chiffre d'affaires et du bénéfice net — uniquement à partir des données
+        // financières validées par TAPA CONSEIL (jamais une saisie en attente).
+        const elFinance = document.getElementById('finance-content');
+        if (elFinance) {
+          elFinance.innerHTML = donnees_financieres.length
+            ? `<h2>Évolution financière</h2>
+               <h3 style="font-size:14px; margin-top:12px;">Chiffre d'affaires</h3>
+               ${graphiqueBarres(donnees_financieres, 'annee', 'chiffre_affaires', '#0F2F59', 'FCFA')}
+               <h3 style="font-size:14px; margin-top:16px;">Bénéfice net</h3>
+               ${graphiqueBarres(donnees_financieres, 'annee', 'benefice_net', '#0B6E4F', 'FCFA')}`
+            : `<h2>Évolution financière</h2><p style="color:#999;">Données financières non encore renseignées pour ce titre.</p>`;
+        }
+    // Convertit le Markdown simple utilisé par les études (titres #, gras **, italique *,
+    // séparateurs ---, listes numérotées) en vraie mise en forme HTML.
+    function markdownVersHtml(texte) {
+      const lignes = texte.split('\n');
+      let html = '';
+      let typeListe = null; // null, 'ol' (numérotée) ou 'ul' (à puces)
+      let liOuverte = false;
+      function fermerListe() {
+        if (liOuverte) { html += '</li>'; liOuverte = false; }
+        if (typeListe) { html += typeListe === 'ol' ? '</ol>' : '</ul>'; typeListe = null; }
+      }
+      function ouvrirListe(type, contenu) {
+        if (liOuverte) html += '</li>';
+        if (typeListe && typeListe !== type) { html += typeListe === 'ol' ? '</ol>' : '</ul>'; typeListe = null; }
+        if (!typeListe) { html += type === 'ol' ? '<ol style="padding-left:20px;">' : '<ul style="padding-left:20px;">'; typeListe = type; }
+        html += `<li>${contenu ? formaterInline(contenu) : ''}`;
+        liOuverte = true;
+      }
+      for (let ligne of lignes) {
+        ligne = ligne.trim();
+        if (!ligne) continue; // les lignes vides ne ferment jamais une liste en cours — juste ignorées
+        if (ligne === '---') { fermerListe(); html += '<hr style="border:none; border-top:1px solid var(--border); margin:18px 0;">'; continue; }
+        const mTitre = ligne.match(/^(#{1,4})\s+(.*)/);
+        if (mTitre) {
+          fermerListe();
+          const niveau = Math.min(mTitre[1].length + 2, 4); // # -> h3, ## et ### -> h4 (jamais plus gros que le titre de la carte)
+          html += `<h${niveau} style="margin-top:16px;">${formaterInline(mTitre[2])}</h${niveau}>`;
+          continue;
+        }
+        const mListeNum = ligne.match(/^\d+\.\s*(.*)/);
+        if (mListeNum) { ouvrirListe('ol', mListeNum[1]); continue; }
+        const mListePuce = ligne.match(/^[-*]\s+(.*)/);
+        if (mListePuce) { ouvrirListe('ul', mListePuce[1]); continue; }
+        if (liOuverte) { html += ' ' + formaterInline(ligne); continue; } // suite du texte du point de liste en cours
+        html += `<p>${formaterInline(ligne)}</p>`;
+      }
+      fermerListe();
+      return html;
+    }
+    function formaterInline(texte) {
+      return texte
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    }
+
+    const elEtudes = document.getElementById('etudes-content');
+        elEtudes.innerHTML = etudes.length ? `<h2>Études publiées par TAPA CONSEIL</h2>${etudes.map(e => `<div class="question"><p><strong>${e.titre}</strong> <span style="font-size:12px; color:#777;">— ${new Date(e.date_publication).toLocaleDateString('fr-FR')}</span></p>${markdownVersHtml(e.contenu)}</div>`).join('')}` : `<h2>Études publiées par TAPA CONSEIL</h2><p style="color:#999;">Aucune étude publiée pour ce titre pour le moment.</p>`;
+
+        // Petit graphique SVG fait maison : évolution du cours, du plus ancien au plus récent connu.
+        if (historique.length >= 2) {
+          const points = [...historique].reverse(); // du plus ancien au plus récent
+          const largeur = 680, hauteur = 200, marge = 30;
+          const valeurs = points.map(p => Number(p.cours));
+          const minVal = Math.min(...valeurs), maxVal = Math.max(...valeurs);
+          const ecart = maxVal - minVal || 1;
+          const pas = points.length > 1 ? (largeur - 2 * marge) / (points.length - 1) : 0;
+
+          const coordonnees = points.map((p, i) => {
+            const x = marge + i * pas;
+            const y = hauteur - marge - ((Number(p.cours) - minVal) / ecart) * (hauteur - 2 * marge);
+            return { x, y };
+          });
+          const polyline = coordonnees.map(c => `${c.x},${c.y}`).join(' ');
+
+          // Affiche environ 6 dates réparties sur l'axe, pas toutes (sinon illisible)
+          const pasEtiquette = Math.max(1, Math.floor(points.length / 6));
+
+          document.getElementById('graphique-content').style.display = 'block';
+          document.getElementById('graphique-cours').innerHTML = `
+            <svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto;">
+              <line x1="${marge}" y1="${hauteur - marge}" x2="${largeur - marge}" y2="${hauteur - marge}" stroke="#E1E5EC" />
+              <polyline points="${polyline}" fill="none" stroke="#0F2F59" stroke-width="2.5" />
+              ${coordonnees.map((c, i) => i % pasEtiquette === 0 ? `<text x="${c.x}" y="${hauteur - 8}" font-size="9" fill="#999" text-anchor="middle">${new Date(points[i].date_cours).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</text>` : '').join('')}
+            </svg>
+            <p style="font-size:12px; color:#777; margin-top:6px;">Plus bas : <strong>${minVal.toLocaleString('fr-FR')} FCFA</strong> — Plus haut : <strong>${maxVal.toLocaleString('fr-FR')} FCFA</strong> (sur la période suivie)</p>
+          `;
+        }
+      } catch (e) { document.getElementById('fiche-content').innerHTML = `<p class="error">${e.message}</p>`; }
+    })();
+  </script>
+</body>
+</html>

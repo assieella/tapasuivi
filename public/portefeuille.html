@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon portefeuille — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container" style="max-width: 760px;">
+
+    <div class="card" id="resume-content"><h1>Mon portefeuille</h1><p>Chargement...</p></div>
+
+    <div class="card">
+      <h2>Évolution</h2>
+      <div id="graphique-evolution"><p style="color:#999;">Chargement du graphique...</p></div>
+      <p style="font-size:13px; color:#666; margin-top:8px;"><span style="color:var(--navy); font-weight:700;">━</span> Valeur du portefeuille &nbsp; <span style="color:var(--gold); font-weight:700;">━</span> Montant versé</p>
+    </div>
+
+    <div class="card">
+      <h2>Ajouter un achat ou une vente</h2>
+      <label>Titre</label>
+      <select id="t-ticker"></select>
+      <label>Type</label>
+      <select id="t-type">
+        <option value="achat">Achat</option>
+        <option value="vente">Vente</option>
+      </select>
+      <label>Date</label><input type="date" id="t-date">
+      <label>Quantité</label><input type="number" id="t-quantite" min="1">
+      <label>Prix unitaire payé (FCFA)</label><input type="number" id="t-prix" min="0">
+      <button onclick="ajouterTransaction()">Enregistrer</button>
+      <div id="resultat-transaction"></div>
+    </div>
+
+    <div class="card">
+      <h2>Mes positions</h2>
+      <div id="liste-positions"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Historique des transactions</h2>
+      <div id="liste-transactions"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Analyses mensuelles reçues</h2>
+      <div id="liste-analyses"><p>Chargement...</p></div>
+    </div>
+
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    function formatFCFA(n) { return Number(n).toLocaleString('fr-FR') + ' FCFA'; }
+
+    async function chargerTitres() {
+      const { titres } = await apiCall('/api/titres');
+      document.getElementById('t-ticker').innerHTML = titres.map(t => `<option value="${t.ticker}">${t.ticker} — ${t.nom}</option>`).join('');
+    }
+
+    async function chargerResume() {
+      const { positions, montant_net_investi, valeur_totale } = await apiCall('/api/portefeuille');
+      const performance = montant_net_investi > 0 ? Math.round(((valeur_totale - montant_net_investi) / montant_net_investi) * 10000) / 100 : 0;
+      document.getElementById('resume-content').innerHTML = `
+        <h1>Mon portefeuille</h1>
+        <p>Valeur actuelle : <strong style="font-size:22px;">${formatFCFA(valeur_totale)}</strong></p>
+        <p>Montant net investi : <strong>${formatFCFA(montant_net_investi)}</strong></p>
+        <p>Performance : <strong style="color:${performance >= 0 ? '#0B6E4F' : '#C0392B'}">${performance >= 0 ? '+' : ''}${performance}%</strong></p>
+      `;
+
+      const elPos = document.getElementById('liste-positions');
+      if (!positions.length) { elPos.innerHTML = '<p style="color:#999;">Aucune position pour le moment — enregistrez votre premier achat ci-dessous.</p>'; return; }
+      elPos.innerHTML = `
+        <table>
+          <thead><tr><th>Titre</th><th>Quantité</th><th>Prix moyen</th><th>Valeur actuelle</th><th>+/- value</th></tr></thead>
+          <tbody>
+            ${positions.map(p => `
+              <tr>
+                <td>${p.ticker}</td>
+                <td>${p.quantite_detenue}</td>
+                <td>${formatFCFA(p.prix_moyen_achat)}</td>
+                <td>${p.valeur_actuelle !== null ? formatFCFA(p.valeur_actuelle) : '—'}</td>
+                <td style="color:${p.plus_value >= 0 ? '#0B6E4F' : '#C0392B'}">${p.plus_value !== null ? (p.plus_value >= 0 ? '+' : '') + formatFCFA(p.plus_value) : '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function chargerTransactions() {
+      const { transactions } = await apiCall('/api/portefeuille/transactions');
+      const el = document.getElementById('liste-transactions');
+      if (!transactions.length) { el.innerHTML = '<p style="color:#999;">Aucune transaction enregistrée.</p>'; return; }
+      el.innerHTML = `
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Titre</th><th>Quantité</th><th>Prix</th><th></th></tr></thead>
+          <tbody>
+            ${transactions.map(t => `
+              <tr>
+                <td>${new Date(t.date_transaction).toLocaleDateString('fr-FR')}</td>
+                <td>${t.type === 'achat' ? 'Achat' : 'Vente'}</td>
+                <td>${t.ticker}</td>
+                <td>${t.quantite}</td>
+                <td>${formatFCFA(t.prix_unitaire)}</td>
+                <td><button class="btn-secondary" style="margin:0; padding:4px 10px; font-size:12px;" onclick="supprimerTransaction(${t.id})">Retirer</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function ajouterTransaction() {
+      const el = document.getElementById('resultat-transaction');
+      try {
+        await apiCall('/api/portefeuille/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            ticker: document.getElementById('t-ticker').value,
+            type: document.getElementById('t-type').value,
+            date_transaction: document.getElementById('t-date').value,
+            quantite: Number(document.getElementById('t-quantite').value),
+            prix_unitaire: Number(document.getElementById('t-prix').value)
+          })
+        });
+        el.innerHTML = '<p class="success">Transaction enregistrée.</p>';
+        document.getElementById('t-quantite').value = '';
+        document.getElementById('t-prix').value = '';
+        await Promise.all([chargerResume(), chargerTransactions(), chargerGraphique()]);
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function supprimerTransaction(id) {
+      await apiCall(`/api/portefeuille/transactions/${id}`, { method: 'DELETE' });
+      await Promise.all([chargerResume(), chargerTransactions(), chargerGraphique()]);
+    }
+
+    async function chargerAnalyses() {
+      const { analyses } = await apiCall('/api/portefeuille/analyses');
+      const el = document.getElementById('liste-analyses');
+      if (!analyses.length) { el.innerHTML = '<p style="color:#999;">Aucune analyse reçue pour le moment — la première arrive après votre premier mois avec des transactions enregistrées.</p>'; return; }
+      el.innerHTML = analyses.map(a => `
+        <div class="question">
+          <p style="font-size:12px; color:#777;">${new Date(a.mois).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
+          <div>${a.contenu}</div>
+        </div>
+      `).join('');
+    }
+
+    // Petit graphique SVG fait maison (pas de dépendance externe) : deux courbes,
+    // valeur du portefeuille et montant net investi.
+    async function chargerGraphique() {
+      const { evolution } = await apiCall('/api/portefeuille/evolution');
+      const el = document.getElementById('graphique-evolution');
+      if (!evolution.length) { el.innerHTML = '<p style="color:#999;">Le graphique apparaîtra dès votre premier achat enregistré.</p>'; return; }
+
+      const largeur = 680, hauteur = 220, marge = 30;
+      const maxValeur = Math.max(1, ...evolution.map(p => Math.max(p.valeur_totale, p.montant_net_investi)));
+      const pas = evolution.length > 1 ? (largeur - 2 * marge) / (evolution.length - 1) : 0;
+
+      const pointsValeur = evolution.map((p, i) => {
+        const x = marge + i * pas;
+        const y = hauteur - marge - (p.valeur_totale / maxValeur) * (hauteur - 2 * marge);
+        return `${x},${y}`;
+      }).join(' ');
+      const pointsVerse = evolution.map((p, i) => {
+        const x = marge + i * pas;
+        const y = hauteur - marge - (p.montant_net_investi / maxValeur) * (hauteur - 2 * marge);
+        return `${x},${y}`;
+      }).join(' ');
+
+      el.innerHTML = `
+        <svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto;">
+          <line x1="${marge}" y1="${hauteur - marge}" x2="${largeur - marge}" y2="${hauteur - marge}" stroke="#E1E5EC" />
+          <polyline points="${pointsVerse}" fill="none" stroke="#DAAA37" stroke-width="2" />
+          <polyline points="${pointsValeur}" fill="none" stroke="#0F2F59" stroke-width="2.5" />
+          ${evolution.map((p, i) => `<text x="${marge + i * pas}" y="${hauteur - 8}" font-size="9" fill="#999" text-anchor="middle">${p.mois.slice(5)}</text>`).join('')}
+        </svg>
+      `;
+    }
+
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+      const aujourdHui = new Date().toISOString().slice(0, 10);
+      document.getElementById('t-date').value = aujourdHui;
+      document.getElementById('t-date').max = aujourdHui;
+
+      try {
+        await chargerTitres();
+        await Promise.all([chargerResume(), chargerTransactions(), chargerGraphique(), chargerAnalyses()]);
+      } catch (e) {
+        if (e.acces_termine) afficherAccesTermine(document.querySelector('.container'));
+        else document.getElementById('resume-content').innerHTML = `<h1>Mon portefeuille</h1><p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

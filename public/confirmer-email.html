@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmation d'email — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div></div>
+  <div class="container" style="max-width: 500px;">
+    <div class="card" id="contenu">
+      <p>Confirmation en cours...</p>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      const token = new URLSearchParams(window.location.search).get('token');
+      const el = document.getElementById('contenu');
+      if (!token) { el.innerHTML = '<p class="error">Lien invalide.</p>'; return; }
+      try {
+        await apiCall('/api/auth/confirmer-email', { method: 'POST', body: JSON.stringify({ token }) });
+        el.innerHTML = '<h1>✅ Email confirmé !</h1><p>Merci, votre adresse email est maintenant vérifiée.</p><a href="/dashboard.html"><button>Aller à mon espace</button></a>';
+      } catch (e) {
+        el.innerHTML = `<h1>❌ Lien invalide</h1><p class="error">${e.message}</p><a href="/dashboard.html"><button>Retourner à mon espace</button></a>`;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion du blog — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office — Blog</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+
+    <div class="card">
+      <h1>Nouvel article</h1>
+      <p style="font-size:14px; color:#666;">Pour l'image, colle un lien vers une image déjà hébergée en ligne (elle ne peut pas être uploadée directement ici).</p>
+      <label>Titre</label><input type="text" id="a-titre" placeholder="Ex: 5 erreurs à éviter en bourse">
+      <label>Résumé (affiché dans la liste et sur LinkedIn/Facebook)</label><input type="text" id="a-extrait" placeholder="Une ou deux phrases accrocheuses">
+      <label>Lien de l'image de couverture (optionnel)</label><input type="text" id="a-image" placeholder="https://...">
+      <label>Contenu de l'article</label><textarea id="a-contenu" rows="10" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"></textarea>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:400;"><input type="checkbox" id="a-publie" style="width:auto;"> Publier immédiatement</label>
+      <button onclick="creerArticle()">Enregistrer</button>
+      <div id="resultat-article"></div>
+    </div>
+
+    <div class="card">
+      <h2>Articles</h2>
+      <div id="liste-articles"><p>Chargement...</p></div>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function creerArticle() {
+      const el = document.getElementById('resultat-article');
+      try {
+        await apiCall('/api/admin/blog', { method: 'POST', body: JSON.stringify({
+          titre: document.getElementById('a-titre').value,
+          extrait: document.getElementById('a-extrait').value,
+          image_url: document.getElementById('a-image').value,
+          contenu: document.getElementById('a-contenu').value,
+          publie: document.getElementById('a-publie').checked
+        }) });
+        el.innerHTML = '<p class="success">Article enregistré.</p>';
+        document.getElementById('a-titre').value = ''; document.getElementById('a-extrait').value = '';
+        document.getElementById('a-image').value = ''; document.getElementById('a-contenu').value = '';
+        document.getElementById('a-publie').checked = false;
+        await chargerArticles();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function basculerPublication(id, publie) {
+      const article = (await apiCall('/api/admin/blog')).articles.find(a => a.id === id);
+      await apiCall(`/api/admin/blog/${id}`, { method: 'PUT', body: JSON.stringify({ ...article, publie }) });
+      await chargerArticles();
+    }
+
+    async function supprimerArticle(id) {
+      await apiCall(`/api/admin/blog/${id}`, { method: 'DELETE' });
+      await chargerArticles();
+    }
+
+    async function chargerArticles() {
+      const { articles } = await apiCall('/api/admin/blog');
+      const el = document.getElementById('liste-articles');
+      if (!articles.length) { el.innerHTML = '<p style="color:#999;">Aucun article.</p>'; return; }
+      el.innerHTML = articles.map(a => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+          <span>${a.titre} ${a.publie ? '<span class="badge badge-equilibre">Publié</span>' : '<span class="badge badge-offensif">Brouillon</span>'}
+          ${a.publie ? ` — <a href="/blog/${a.slug}" target="_blank">voir</a>` : ''}</span>
+          <span>
+            <button class="btn-secondary" style="margin:0 6px 0 0; padding:4px 10px; font-size:12px;" onclick="basculerPublication(${a.id}, ${!a.publie})">${a.publie ? 'Dépublier' : 'Publier'}</button>
+            <button class="btn-secondary" style="margin:0; padding:4px 10px; font-size:12px;" onclick="supprimerArticle(${a.id})">Supprimer</button>
+          </span>
+        </div>
+      `).join('');
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerArticles();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Questionnaire profil investisseur — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div>
+    <a href="/dashboard.html">← Mon espace</a>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h1>Questionnaire de profil investisseur</h1>
+      <p>Complétez ces informations puis les 14 questions (environ 4 minutes) pour déterminer votre profil et recevoir une analyse personnalisée par email.</p>
+      <form id="info-form" class="card" style="padding:20px; margin-bottom:20px;"></form>
+      <form id="quiz-form"></form>
+      <div id="result-area"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let questions = [];
+    let infoFields = [];
+
+    async function init() {
+      const user = await requireLogin();
+      if (!user) return;
+      const { questions: qs, infoFields: fields } = await apiCall('/api/profile/questions');
+      questions = qs; infoFields = fields;
+      renderInfoForm(); renderForm();
+    }
+
+    function renderInfoForm() {
+      const form = document.getElementById('info-form');
+      form.innerHTML = `<h3 style="margin-top:0;">Vos informations</h3>` + infoFields.map(f => {
+        if (f.type === 'select') return `<label>${f.label}</label><select id="info-${f.id}" required><option value="" disabled selected>Choisissez...</option>${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
+        return `<label>${f.label}</label><input type="${f.type === 'number' ? 'number' : 'text'}" id="info-${f.id}" ${f.type === 'number' ? 'min="0"' : ''} required>`;
+      }).join('');
+    }
+
+    function collecterInfos() {
+      const infos = {};
+      for (const f of infoFields) {
+        const el = document.getElementById(`info-${f.id}`);
+        if (!el.value) { alert(`Merci de renseigner : ${f.label}`); return null; }
+        infos[f.id] = el.value;
+      }
+      return infos;
+    }
+
+    function renderForm() {
+      const form = document.getElementById('quiz-form');
+      const categories = [];
+      for (const q of questions) {
+        let cat = categories.find(c => c.nom === q.categorie);
+        if (!cat) { cat = { nom: q.categorie, items: [] }; categories.push(cat); }
+        cat.items.push(q);
+      }
+      let questionNum = 0;
+      form.innerHTML = categories.map(cat => `
+        <h3>${cat.nom}</h3>
+        ${cat.items.map(q => { questionNum++; return `
+          <div class="question"><p><strong>${questionNum}. ${q.label}</strong></p>
+          ${q.options.map(opt => `<label class="option"><input type="radio" name="${q.id}" value="${opt.value}" required> ${opt.label}</label>`).join('')}
+          </div>`; }).join('')}
+      `).join('') + '<button type="submit">Valider mes réponses</button>';
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const infos = collecterInfos();
+        if (!infos) return;
+        const answers = {};
+        for (const q of questions) {
+          const checked = form.querySelector(`input[name="${q.id}"]:checked`);
+          if (!checked) { alert('Merci de répondre à toutes les questions.'); return; }
+          answers[q.id] = Number(checked.value);
+        }
+        try {
+          const { profile, recommandations, max_score } = await apiCall('/api/profile', { method: 'POST', body: JSON.stringify({ answers, infos }) });
+          document.getElementById('result-area').innerHTML = `
+            <div class="success"><h2>Votre profil : ${profile.profile_type} (${profile.score}/${max_score})</h2>
+            <p>${recommandations.conseil}</p>
+            <p>Une analyse complète et personnalisée vous a été envoyée par email. Vous pouvez maintenant définir votre plan d'investissement.</p>
+            <a href="/questionnaire-plan.html"><button>Définir mon plan d'investissement</button></a></div>`;
+          form.style.display = 'none';
+          document.getElementById('info-form').style.display = 'none';
+        } catch (err) { document.getElementById('result-area').innerHTML = `<p class="error">${err.message}</p>`; }
+      });
+    }
+    init();
+  </script>
+</body>
+</html>

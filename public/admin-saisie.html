@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saisie des données financières — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Saisie de données</span></div><a href="#" onclick="deconnexion()">Déconnexion</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>Données financières fondamentales</h1>
+      <p style="font-size:13px; color:#666;">À saisir depuis les rapports annuels/semestriels officiels de la société (disponibles sur brvm.org, rubrique "Rapports sociétés cotées"). Une ligne par année. Tes saisies restent en attente jusqu'à validation par TAPA CONSEIL.</p>
+      <label>Titre</label><select id="select-titre-finance"></select>
+      <label>Année</label><input type="number" id="finance-annee" placeholder="2025">
+      <label>Chiffre d'affaires (FCFA)</label><input type="number" id="finance-ca" placeholder="Ex: 450000000">
+      <label>Bénéfice net (FCFA)</label><input type="number" id="finance-benefice" placeholder="Ex: 32000000">
+      <label>Capitaux propres (FCFA)</label><input type="number" id="finance-capitaux" placeholder="Ex: 180000000">
+      <label>Dettes totales (FCFA)</label><input type="number" id="finance-dettes" placeholder="Ex: 60000000">
+      <button onclick="ajouterDonneesFinancieres()">Enregistrer cette année</button>
+      <div id="resultat-finance"></div>
+      <div id="historique-finance" style="margin-top:16px;"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function deconnexion() { await apiCall('/api/auth/logout', { method: 'POST' }); window.location.href = '/connexion.html'; }
+
+    function formaterMontant(n) {
+      if (n === null || n === undefined) return '—';
+      return Number(n).toLocaleString('fr-FR') + ' FCFA';
+    }
+
+    async function chargerHistoriqueFinance() {
+      const ticker = document.getElementById('select-titre-finance').value;
+      const el = document.getElementById('historique-finance');
+      if (!ticker) { el.innerHTML = ''; return; }
+      try {
+        const { donnees } = await apiCall(`/api/saisie/titres/${ticker}/donnees-financieres`);
+        if (!donnees.length) { el.innerHTML = '<p style="color:#999;">Aucune donnée enregistrée pour ce titre pour le moment.</p>'; return; }
+        const parAnneeCroissante = [...donnees].sort((a, b) => a.annee - b.annee);
+        el.innerHTML = '<h3 style="font-size:14px; margin-top:8px;">Historique saisi pour ce titre</h3>' +
+          parAnneeCroissante.map((d, i) => {
+            const precedent = parAnneeCroissante[i - 1];
+            let croissanceCA = '';
+            if (precedent && precedent.chiffre_affaires && d.chiffre_affaires) {
+              const pct = Math.round(((d.chiffre_affaires - precedent.chiffre_affaires) / precedent.chiffre_affaires) * 1000) / 10;
+              croissanceCA = ` <span style="color:${pct >= 0 ? '#0B6E4F' : '#C0392B'};">(${pct >= 0 ? '+' : ''}${pct}% vs ${precedent.annee})</span>`;
+            }
+            return `<div class="titre-row" style="display:block;">
+              <strong>${d.annee}</strong>
+              ${d.valide ? '<span style="color:#0B6E4F; font-size:12px;"> ✅ Validé</span>' : '<span style="color:#B8891E; font-size:12px;"> ⏳ En attente de validation</span>'}
+              <br>
+              <span style="font-size:13px;">CA : ${formaterMontant(d.chiffre_affaires)}${croissanceCA} — Bénéfice net : ${formaterMontant(d.benefice_net)} — Capitaux propres : ${formaterMontant(d.capitaux_propres)} — Dettes : ${formaterMontant(d.dettes_totales)}</span>
+            </div>`;
+          }).reverse().join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function ajouterDonneesFinancieres() {
+      const ticker = document.getElementById('select-titre-finance').value;
+      const el = document.getElementById('resultat-finance');
+      if (!ticker) { el.innerHTML = '<p class="error">Choisis d\'abord un titre.</p>'; return; }
+      try {
+        await apiCall(`/api/saisie/titres/${ticker}/donnees-financieres`, {
+          method: 'POST',
+          body: JSON.stringify({
+            annee: document.getElementById('finance-annee').value,
+            chiffre_affaires: document.getElementById('finance-ca').value,
+            benefice_net: document.getElementById('finance-benefice').value,
+            capitaux_propres: document.getElementById('finance-capitaux').value,
+            dettes_totales: document.getElementById('finance-dettes').value
+          })
+        });
+        el.innerHTML = '<p class="success">✅ Enregistré — en attente de validation par TAPA CONSEIL.</p>';
+        document.getElementById('finance-annee').value = '';
+        document.getElementById('finance-ca').value = '';
+        document.getElementById('finance-benefice').value = '';
+        document.getElementById('finance-capitaux').value = '';
+        document.getElementById('finance-dettes').value = '';
+        await chargerHistoriqueFinance();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    (async () => {
+      let user;
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) { window.location.href = '/connexion.html'; return; }
+        user = (await res.json()).user;
+      } catch { window.location.href = '/connexion.html'; return; }
+
+      if (user.role !== 'saisie') {
+        document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé.</p></div>';
+        return;
+      }
+
+      const { titres } = await apiCall('/api/saisie/titres');
+      const options = '<option value="">— Choisir —</option>' + titres.map(t => `<option value="${t.ticker}">${t.ticker} — ${t.nom}</option>`).join('');
+      document.getElementById('select-titre-finance').innerHTML = options;
+      document.getElementById('select-titre-finance').addEventListener('change', chargerHistoriqueFinance);
+    })();
+  </script>
+</body>
+</html>
