@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forum — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>💬 Forum</h1>
+      <p style="font-size:14px; color:#666;">Un espace d'échange entre membres de la communauté TAPA CONSEIL. Restez respectueux, et gardez en tête que les échanges ici sont éducatifs — jamais des recommandations d'achat à suivre les yeux fermés.</p>
+      <button onclick="document.getElementById('form-nouveau-sujet').style.display='block'; event.target.style.display='none';">✏️ Créer un sujet</button>
+      <div id="form-nouveau-sujet" style="display:none; margin-top:16px;">
+        <label>Titre</label><input type="text" id="nouveau-titre" placeholder="Ex: Comment lire un bilan comptable ?">
+        <label>Message</label><textarea id="nouveau-contenu" rows="4" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"></textarea>
+        <button onclick="creerSujet()">Publier</button>
+        <div id="resultat-nouveau-sujet"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div id="liste-sujets"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function chargerSujets() {
+      const el = document.getElementById('liste-sujets');
+      try {
+        const { sujets } = await apiCall('/api/forum');
+        if (!sujets.length) { el.innerHTML = '<p style="color:#999;">Aucun sujet pour le moment — sois la première à en lancer un !</p>'; return; }
+        el.innerHTML = sujets.map(s => `
+          <div class="titre-row" style="display:block; cursor:pointer;" onclick="window.location.href='/forum-sujet.html?id=${s.id}'">
+            ${s.epingle ? '<span style="color:#B8891E;">📌 </span>' : ''}
+            <strong style="font-size:16px;">${s.titre}</strong>
+            <br><span style="font-size:13px; color:#777;">Par ${s.prenom || s.full_name} — ${new Date(s.created_at).toLocaleDateString('fr-FR')} — ${s.nombre_reponses} réponse${s.nombre_reponses > 1 ? 's' : ''}</span>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function creerSujet() {
+      const el = document.getElementById('resultat-nouveau-sujet');
+      const titre = document.getElementById('nouveau-titre').value;
+      const contenu = document.getElementById('nouveau-contenu').value;
+      try {
+        await apiCall('/api/forum', { method: 'POST', body: JSON.stringify({ titre, contenu }) });
+        document.getElementById('nouveau-titre').value = '';
+        document.getElementById('nouveau-contenu').value = '';
+        document.getElementById('form-nouveau-sujet').style.display = 'none';
+        await chargerSujets();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      try { await chargerSujets(); }
+      catch (e) { document.querySelector('.container').innerHTML = `<div class="card"><p class="error">${e.message}</p></div>`; }
+    })();
+  </script>
+</body>
+</html>

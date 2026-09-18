@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon suivi — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>📋 Historique de mon suivi</h1>
+      <p style="font-size:13px; color:#666;">Toutes les étapes de votre accompagnement — dossiers, analyses, échanges — pour savoir exactement où vous en êtes avec votre conseillère.</p>
+      <div id="journal-liste"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const LABELS_STATUT = { termine: '✅ Terminé', en_cours: '🔵 En cours', a_faire: '⏳ À faire' };
+    (async () => {
+      const user = await requireLogin();
+      if (!user) return;
+      const el = document.getElementById('journal-liste');
+      try {
+        const { entrees } = await apiCall('/api/journal');
+        if (!entrees.length) { el.innerHTML = '<p style="color:#999;">Aucune entrée pour le moment.</p>'; return; }
+        el.innerHTML = entrees.map(e => `
+          <div class="titre-row" style="display:block;">
+            <strong>${new Date(e.date_action).toLocaleDateString('fr-FR')}</strong> — ${LABELS_STATUT[e.statut] || e.statut}
+            <br><strong style="font-size:14px;">${e.titre}</strong>
+            ${e.description ? `<br><span style="font-size:13px; color:#666;">${e.description}</span>` : ''}
+          </div>
+        `).join('');
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

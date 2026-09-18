@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAPA INVEST — Programme BRVM Starter | TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<style>
+  :root { --navy: #0F2F59; --navy-deep: #081b36; --gold: #DAAA37; --gold-light: #F0D385; --cream: #FBF8F2; --ink: #1C2733; --rule: #E3DCC9; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--cream); line-height: 1.65; font-size: 17px; }
+  h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; color: var(--navy); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  a.cta, button.cta { display: inline-block; background: var(--gold); color: var(--navy-deep); text-decoration: none; font-weight: 700; padding: 15px 30px; border-radius: 40px; font-size: 16px; border: none; cursor: pointer; box-shadow: 0 8px 24px rgba(218,170,55,0.35); }
+  a.cta-outline { display: inline-block; border: 2px solid white; color: white; text-decoration: none; font-weight: 700; padding: 13px 28px; border-radius: 40px; font-size: 16px; }
+
+  /* Hero — le seul endroit où on autorise un vrai geste graphique fort */
+  .hero { position: relative; background: radial-gradient(ellipse at 30% 20%, #16447f 0%, var(--navy) 45%, var(--navy-deep) 100%); color: white; padding: 64px 0 84px; text-align: center; }
+  .hero img.logo { height: 92px; margin-bottom: 12px; }
+  .hero .eyebrow { letter-spacing: 3px; font-size: 12px; color: var(--gold-light); text-transform: uppercase; font-weight: 700; }
+  .hero h1 { color: white; font-size: 36px; max-width: 620px; margin: 12px auto 16px; line-height: 1.25; }
+  .hero p.sub { color: #D9E2EF; max-width: 560px; margin: 0 auto 28px; font-size: 19px; }
+  .hero .tagline { color: var(--gold-light); font-style: italic; font-size: 16px; margin-top: 20px; }
+  .hero .boutons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  section { padding: 64px 0; }
+  h2.section-title { font-size: 30px; margin-bottom: 8px; }
+  p.section-lede { color: #6B5F4A; font-size: 16px; max-width: 560px; margin-bottom: 32px; }
+
+  /* Registre / prospectus : chiffres alignés, tabulaires, comme un vrai relevé financier */
+  .chiffre { font-variant-numeric: tabular-nums; font-family: Georgia, serif; }
+
+  /* "Pour qui" et listes de bénéfices : une liste sobre, pas des cartes */
+  .liste-a-puce { border-top: 1px solid var(--rule); }
+  .liste-a-puce .ligne { display: flex; gap: 16px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid var(--rule); }
+  .liste-a-puce .ligne .puce { color: var(--gold); font-size: 20px; font-family: Georgia, serif; flex-shrink: 0; line-height: 1.4; }
+  .liste-a-puce .ligne h3 { font-size: 17px; margin-bottom: 3px; }
+  .liste-a-puce .ligne p { font-size: 15px; color: #555; margin: 0; }
+
+  /* Ce qui est inclus : rangée numérotée façon prospectus, sans carte */
+  .rangee-numerotee { display: flex; gap: 20px; align-items: flex-start; padding: 20px 0; border-bottom: 1px solid var(--rule); }
+  .rangee-numerotee:first-child { border-top: 1px solid var(--rule); }
+  .rangee-numerotee .num { color: var(--gold); font-family: Georgia, serif; font-size: 24px; font-weight: 700; min-width: 38px; }
+  .rangee-numerotee h3 { font-size: 17px; margin-bottom: 4px; }
+  .rangee-numerotee p { font-size: 15px; color: #555; margin: 0; max-width: 520px; }
+
+  /* Témoignages : traitement citation, pas des cartes */
+  .citation { border-left: 3px solid var(--gold); padding-left: 22px; margin-bottom: 30px; }
+  .citation .guillemet { font-family: Georgia, serif; font-size: 40px; color: var(--gold); line-height: 0.4; display: block; margin-bottom: 8px; }
+  .citation p.texte { font-size: 16px; font-style: italic; color: var(--ink); margin-bottom: 10px; }
+  .citation .auteur { font-size: 14px; color: #6B5F4A; }
+  .citation .auteur strong { color: var(--navy); font-style: normal; }
+  .grille-citations { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 40px; }
+
+  /* Ressources gratuites : simple liste à icône, sans carte */
+  .liste-ressources { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 32px; margin: 28px 0 32px; }
+  .liste-ressources .ligne { display: flex; gap: 14px; align-items: flex-start; }
+  .liste-ressources .ligne .icone { font-size: 22px; flex-shrink: 0; }
+  .liste-ressources .ligne h3 { font-size: 16px; margin-bottom: 2px; }
+  .liste-ressources .ligne p { font-size: 14px; color: #555; margin: 0; }
+
+  /* Tarifs : cartes légitimes ici (comparaison de prix) */
+  .tarifs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+  .tarif-card { background: var(--navy); color: white; border-radius: 4px; padding: 34px 28px; text-align: center; }
+  .tarif-card.alt { background: white; color: var(--ink); border: 1px solid var(--rule); }
+  .tarif-card h3 { color: var(--gold-light); font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+  .tarif-card.alt h3 { color: var(--navy); }
+  .tarif-card .prix { font-family: Georgia, serif; font-size: 34px; font-weight: 700; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .tarif-card .detail-prix { font-size: 14px; opacity: 0.85; margin-bottom: 20px; }
+
+  /* Espaces (navigation) : deux liens simples, pas des cartes en double du reste */
+  .liens-espaces { display: flex; gap: 40px; flex-wrap: wrap; padding-top: 8px; }
+  .liens-espaces a { display: block; color: var(--ink); text-decoration: none; flex: 1; min-width: 240px; padding: 20px 0; border-top: 2px solid var(--navy); }
+  .liens-espaces a h3 { font-size: 18px; margin-bottom: 6px; }
+  .liens-espaces a p { font-size: 14px; color: #555; margin: 0; }
+  .liens-espaces a:hover h3 { color: var(--gold); }
+
+  /* Dividendes : registre tabulaire, le sujet lui-même est financier */
+  .registre { width: 100%; border-collapse: collapse; }
+  .registre th { text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #6B5F4A; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid var(--navy); }
+  .registre td { padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+  .registre td.ticker { font-family: Georgia, serif; font-weight: 700; color: var(--navy); }
+  .registre td.montant { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--gold); white-space: nowrap; }
+  .registre th.montant { text-align: right; }
+
+  /* Blog : rangée éditoriale horizontale, pas des cartes carrées */
+  .rangee-article { display: flex; gap: 24px; align-items: center; padding: 24px 0; border-bottom: 1px solid var(--rule); text-decoration: none; color: var(--ink); }
+  .rangee-article:first-child { border-top: 1px solid var(--rule); }
+  .rangee-article img { width: 140px; height: 100px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+  .rangee-article h3 { font-size: 18px; margin-bottom: 6px; }
+  .rangee-article:hover h3 { color: var(--gold); }
+  .rangee-article p { font-size: 14px; color: #555; margin: 0; }
+
+  /* FAQ : question/réponse sobre, sans carte */
+  .faq-ligne { padding: 20px 0; border-bottom: 1px solid var(--rule); }
+  .faq-ligne:first-child { border-top: 1px solid var(--rule); }
+  .faq-ligne h3 { font-size: 16px; margin-bottom: 6px; }
+  .faq-ligne p { font-size: 15px; color: #555; margin: 0; }
+
+  footer { background: var(--navy-deep); color: #9FB0C6; text-align: center; padding: 30px 0; font-size: 13px; }
+  footer a { color: var(--gold-light); text-decoration: none; }
+
+  /* Bande de cours défilante */
+  .ticker-banner { background: var(--navy-deep); overflow: hidden; white-space: nowrap; padding: 10px 0; }
+  .ticker-track { display: inline-block; padding-left: 100%; animation: ticker-scroll 60s linear infinite; }
+  .ticker-item { display: inline-block; padding: 0 24px; font-size: 14px; font-weight: 600; color: white; }
+  .ticker-item .up { color: #6FCF97; }
+  .ticker-item .down { color: #FF8A80; }
+  .ticker-item .flat { color: var(--gold-light); }
+  @keyframes ticker-scroll { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 27px; }
+    .grille-citations, .liste-ressources { grid-template-columns: 1fr; }
+    .liens-espaces { flex-direction: column; gap: 20px; }
+    .rangee-article { flex-direction: column; align-items: flex-start; }
+    .rangee-article img { width: 100%; height: 160px; }
+    .registre { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="ticker-banner" id="ticker-banner" style="display:none;"></div>
+
+  <div class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Programme d'accompagnement boursier</div>
+      <img class="logo" src="/images/logo.png" alt="TAPA CONSEIL">
+      <h1>Vous voulez investir à la BRVM, mais vous ne savez pas par où commencer ?</h1>
+      <p class="sub">Découvrez une méthode simple pour comprendre la Bourse, définir votre stratégie et commencer à construire votre portefeuille avec un accompagnement humain.</p>
+      <div class="tagline">« L'Intelligence Financière Pour Tous »</div>
+      <div class="boutons" style="margin-top: 26px;">
+        <a class="cta" href="/inscription.html">Créer mon compte gratuit</a>
+      </div>
+      <p style="color: #D9E2EF; font-size: 13px; margin-top: 12px;">1 minute, sans engagement — accède immédiatement à nos ressources.</p>
+      <p style="margin-top: 22px;"><a href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20programme%20TAPA%20INVEST%20(BRVM%20Starter)." style="color: var(--gold-light); font-size: 14px; text-decoration: underline;">Déjà convaincu(e) ? Découvrez BRVM Starter, notre accompagnement complet →</a></p>
+      <p style="color: #D9E2EF; font-size: 14px; margin-top: 20px;">+1000 personnes accompagnées vers l'investissement à la BRVM depuis 2025</p>
+    </div>
+  </div>
+
+  <section style="background: white;">
+    <div class="wrap">
+      <h2 class="section-title">BRVM Starter est fait pour vous si…</h2>
+      <div class="liste-a-puce">
+        <div class="ligne"><span class="puce">—</span><div><h3>Vous êtes débutant</h3><p>Et souhaitez comprendre la BRVM depuis le début, sans jargon compliqué.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Vous avez peur de mal faire</h3><p>Vous voulez investir mais craignez de faire les mauvais choix, seul(e).</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Vous avez déjà des actions</h3><p>Mais vous ne savez pas bien les suivre ni les analyser.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Vous voulez une stratégie</h3><p>Investir régulièrement, avec méthode, plutôt qu'au hasard.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Vous voulez être accompagné(e)</h3><p>Pouvoir poser vos questions à une vraie personne, pas juste un logiciel.</p></div></div>
+      </div>
+      <p style="font-style:italic; color: var(--navy); font-weight:600; margin-top: 24px;">Pas besoin d'être expert en finance pour commencer.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Après 4 mois, vous saurez :</h2>
+      <div class="liste-a-puce">
+        <div class="ligne"><span class="puce">—</span><div><h3>Comprendre la BRVM</h3><p>Son fonctionnement, ses acteurs, comment elle marche vraiment.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Lire une société cotée</h3><p>Reconnaître les informations importantes avant de vous décider.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Définir votre stratégie</h3><p>Adaptée à votre situation, votre objectif, votre horizon.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Suivre votre portefeuille</h3><p>Sans vous perdre dans les chiffres, avec une vraie méthode.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Comprendre les risques</h3><p>Pour investir en connaissance de cause, jamais à l'aveugle.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Analyser des titres</h3><p>Progressivement, à votre rythme, avec un vrai accompagnement.</p></div></div>
+        <div class="ligne"><span class="puce">—</span><div><h3>Investir avec méthode</h3><p>Avec davantage de discipline, moins d'improvisation.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Un accompagnement complet, pas juste une formation</h2>
+      <div>
+        <div class="rangee-numerotee"><div class="num">01</div><div><h3>Diagnostic de profil investisseur</h3><p>14 questions sur votre situation, vos objectifs et votre tolérance au risque, puis une analyse rédigée qui vous explique le pourquoi de vos recommandations.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">02</div><div><h3>Plan d'investissement personnalisé</h3><p>Vous choisissez votre stratégie (croissance, rendement, prudente ou équilibrée) ; on vérifie que votre objectif est réaliste et on ajuste si besoin.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">03</div><div><h3>Formation en ligne complète</h3><p>4 modules vidéo + un bonus sur les FCP, chacun validé par un quiz avant de passer au suivant.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">04</div><div><h3>Espace de suivi personnel</h3><p>Enregistrez vos achats et ventes réels : prix moyen, valeur actuelle, plus/moins-value calculés automatiquement, avec un graphique d'évolution.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">05</div><div><h3>2 études de titres par semaine</h3><p>Des analyses pédagogiques sur les sociétés cotées à la BRVM, en lien avec votre stratégie.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">06</div><div><h3>Récap quotidien par email</h3><p>Le Top 5 des hausses et le Top 5 des baisses du jour à la BRVM, chaque jour dans votre boîte mail.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">07</div><div><h3>Suggestions mensuelles de titres</h3><p>Chaque fin de mois, des pistes de titres en lien avec votre stratégie personnelle.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">08</div><div><h3>Analyse mensuelle de portefeuille</h3><p>Une lecture pédagogique de votre diversification et de votre progression vers votre objectif.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">09</div><div><h3>Un appel collectif chaque mois</h3><p>Questions en direct, actualité du marché, un vrai moment d'échange avec votre conseillère.</p></div></div>
+        <div class="rangee-numerotee"><div class="num">10</div><div><h3>Une conseillère à votre écoute</h3><p>Une messagerie directe pour poser vos questions à tout moment, sans attendre un rendez-vous formel.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="background: white;">
+    <div class="wrap" style="max-width: 760px;">
+      <h2 class="section-title" style="text-align:center;">Ella Assie, CEO TAPA CONSEIL</h2>
+      <div style="display:flex; gap:32px; align-items:center; flex-wrap:wrap; justify-content:center;">
+        <img src="/images/ella-assie.jpeg" alt="Ella Assie" style="width:220px; height:220px; object-fit:cover; border-radius:4px; border:3px solid var(--gold);">
+        <p style="max-width:420px; font-size:16px;">Je fais de l'éducation financière depuis 2020, et j'ai lancé le programme BRVM STARTER en 2024 pour accompagner concrètement les particuliers vers l'investissement à la BRVM. Depuis, plus de 1000 personnes ont été accompagnées à travers « La Méthode TAPA » — parce que je crois que l'éducation financière ne devrait pas être réservée à une élite. Ma mission : rendre la bourse compréhensible, accessible, et sereine pour chacun.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Ils nous font confiance</h2>
+      <div class="grille-citations">
+        <div class="citation"><span class="guillemet">"</span><p class="texte">Un accompagnement clair, même à distance depuis la France.</p><p class="auteur"><strong>M. Bale</strong> — France, client depuis 2025</p></div>
+        <div class="citation"><span class="guillemet">"</span><p class="texte">J'ai enfin compris comment suivre mon portefeuille sereinement.</p><p class="auteur"><strong>Marie Madeleine</strong> — Côte d'Ivoire</p></div>
+        <div class="citation"><span class="guillemet">"</span><p class="texte">Investir au pays depuis l'étranger, avec un vrai accompagnement.</p><p class="auteur"><strong>Geneviève</strong> — Canada</p></div>
+        <div class="citation"><span class="guillemet">"</span><p class="texte">Une méthode simple pour démarrer sans stress.</p><p class="auteur"><strong>Zoualiha</strong> — France</p></div>
+        <div class="citation"><span class="guillemet">"</span><p class="texte">Un suivi mensuel qui m'aide vraiment à progresser.</p><p class="auteur"><strong>Emmanuel</strong> — Nigérien, Côte d'Ivoire</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="background: var(--navy-deep); color: white;">
+    <div class="wrap" style="max-width: 720px; text-align: center;">
+      <h2 class="section-title" style="color: white;">La formation en présentiel revient en 2027</h2>
+      <p style="font-size: 16px; margin-bottom: 8px;">À partir de <strong>février 2027</strong>, une session en présentiel chaque <strong>fin de mois</strong>.</p>
+      <p style="font-size: 16px; margin-bottom: 24px;"><strong style="color: var(--gold-light);">45 000 FCFA</strong> — formation + <strong>4 mois d'accompagnement</strong> inclus.</p>
+      <div style="background: white; color: var(--navy); border-radius: 12px; padding: 28px; max-width: 420px; margin: 0 auto; text-align: left;">
+        <h3 style="margin-bottom: 16px; text-align: center;">Réservez votre place</h3>
+        <form id="form-reservation-presentiel">
+          <label>Nom</label>
+          <input type="text" id="resa-nom" required>
+          <label>Prénom</label>
+          <input type="text" id="resa-prenom" required>
+          <label>Numéro WhatsApp</label>
+          <input type="tel" id="resa-whatsapp" placeholder="Ex: 0504775774" required>
+          <button type="submit" style="margin-top: 12px;">Je réserve ma place</button>
+          <div id="resa-resultat"></div>
+        </form>
+      </div>
+      <p style="font-size: 13px; color: #D9E2EF; margin-top: 16px;">Aucun paiement à cette étape — on vous contacte directement sur WhatsApp pour confirmer votre place.</p>
+    </div>
+  </section>
+
+  <section style="background: white;">
+    <div class="wrap">
+      <h2 class="section-title" style="max-width: 620px;">Ouvre un compte gratuitement pour obtenir nos ressources, conçues pour te faciliter tes premiers pas à la BRVM</h2>
+      <div class="liste-ressources">
+        <div class="ligne"><span class="icone">🎥</span><div><h3>Découverte BRVM</h3><p>Vidéo de présentation + Questions/Réponses sur la Bourse Régionale.</p></div></div>
+        <div class="ligne"><span class="icone">🎓</span><div><h3>Formation gratuite</h3><p>Accès direct, sans étape supplémentaire une fois ton compte confirmé.</p></div></div>
+        <div class="ligne"><span class="icone">🧮</span><div><h3>Simulateur de portefeuille</h3><p>Entraîne-toi à passer des ordres, avec un capital fictif, sans aucun risque réel.</p></div></div>
+        <div class="ligne"><span class="icone">✅</span><div><h3>TEST TAPA</h3><p>Suis-je prête à investir à la BRVM ? Découvre ton résultat en 2 minutes.</p></div></div>
+        <div class="ligne"><span class="icone">🔍</span><div><h3>Actualités du marché</h3><p>Les informations récentes de la BRVM, expliquées simplement.</p></div></div>
+        <div class="ligne"><span class="icone">📇</span><div><h3>Annuaire SGI/SGO</h3><p>La liste des intermédiaires agréés pour investir réellement.</p></div></div>
+      </div>
+      <div>
+        <a class="cta" href="/inscription.html" style="background: #0B6E4F; color: white;">Créer mon compte gratuit</a>
+        <p style="font-size:13px; color:#777; margin-top:10px;">1 minute, sans engagement — confirme ton email et accède à tout immédiatement.</p>
+      </div>
+    </div>
+  </section>
+  <section id="tarifs" style="background: var(--cream);">
+    <div class="wrap">
+      <h2 class="section-title">Choisissez votre formule</h2>
+      <div class="tarifs">
+        <div class="tarif-card">
+          <div style="background: var(--gold); color: var(--navy-deep); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 10px;">⭐ FORMULE RECOMMANDÉE</div>
+          <h3>Suivi 4 mois</h3>
+          <div class="prix">40 000 FCFA</div>
+          <div class="detail-prix">en ligne — 45 000 FCFA en présentiel</div>
+          <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20voudrais%20m'inscrire%20au%20suivi%204%20mois%20TAPA%20INVEST." style="padding:12px 26px; font-size:15px;">Choisir cette formule</a>
+        </div>
+        <div class="tarif-card alt">
+          <h3>Suivi 12 mois</h3>
+          <div class="prix">100 000 FCFA</div>
+          <div class="detail-prix">Pour un accompagnement approfondi sur la durée</div>
+          <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20voudrais%20m'inscrire%20au%20suivi%2012%20mois%20TAPA%20INVEST." style="padding:12px 26px; font-size:15px;">Choisir cette formule</a>
+        </div>
+        <div class="tarif-card alt">
+          <div style="background: #0B6E4F; color: white; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 10px;">🎁 OFFRE DE LANCEMENT</div>
+          <h3>Suivi seul — 3 mois</h3>
+          <div class="prix">14 000 FCFA</div>
+          <div class="detail-prix">Vous avez déjà une formation en bourse ? Gardez juste l'essentiel : suivi de portefeuille, objectif, outils et accès à votre conseillère — sans repasser par la formation.</div>
+          <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20j'ai%20d%C3%A9j%C3%A0%20une%20formation%20en%20bourse%20et%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20Suivi%20seul%20%C3%A0%2014%20000%20FCFA." style="padding:12px 26px; font-size:15px;">Choisir cette formule</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Où souhaitez-vous aller ?</h2>
+      <div class="liens-espaces">
+        <a href="/inscription.html" style="border-color: var(--gold);"><h3>🎁 Compte gratuit</h3><p>Portefeuille virtuel, annuaire SGI/SGO, actualités du marché — créez votre compte en 1 minute, sans engagement.</p></a>
+        <a href="/connexion.html"><h3>🔐 Espace client</h3><p>Déjà client ? Connectez-vous à votre formation et votre suivi personnalisé.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap" style="max-width: 720px;">
+      <h2 class="section-title">Questions fréquentes</h2>
+      <div class="faq-ligne"><h3>Est-ce que je dois déjà connaître la Bourse ?</h3><p>Non, le programme est conçu pour accompagner les débutants, pas à pas.</p></div>
+      <div class="faq-ligne"><h3>Combien faut-il pour commencer à investir ?</h3><p>Ça dépend de votre budget — on en discute ensemble pendant votre diagnostic, sans montant minimum imposé.</p></div>
+      <div class="faq-ligne"><h3>TAPA INVEST investit-il mon argent à ma place ?</h3><p>Non. Nous vous éduquons et vous accompagnons — les décisions et l'exécution des ordres restent les vôtres, via votre propre compte-titres.</p></div>
+      <div class="faq-ligne"><h3>Est-ce que vous garantissez des rendements ?</h3><p>Non. L'investissement comporte des risques et aucun rendement n'est garanti.</p></div>
+      <div class="faq-ligne"><h3>Comment acheter réellement des actions à la BRVM ?</h3><p>Via une SGI (Société de Gestion et d'Intermédiation) — on vous guide dans ce choix pendant l'accompagnement.</p></div>
+    </div>
+  </section>
+
+  <section style="background: white; text-align:center;">
+    <div class="wrap" style="max-width:640px;">
+      <p style="font-size:13px; color:#777; border-left: 3px solid var(--rule); padding:2px 0 2px 16px; text-align:left;">⚠️ <strong>Important :</strong> TAPA INVEST est un programme d'éducation et d'accompagnement à l'investissement. Les décisions d'investissement appartiennent à chaque participant. L'ouverture et la gestion d'un compte-titres ainsi que l'exécution des ordres sont réalisées auprès d'un intermédiaire habilité (SGI).</p>
+    </div>
+  </section>
+
+  <section style="background: var(--navy-deep); text-align:center;">
+    <div class="wrap">
+      <h2 class="section-title" style="color:white;">Prêt(e) à comprendre la BRVM avant d'investir ?</h2>
+      <div class="boutons">
+        <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20programme%20TAPA%20INVEST%20(BRVM%20Starter).">Commencer BRVM Starter — 40 000 FCFA</a>
+        <a class="cta-outline" href="/inscription.html">Créer mon compte gratuit</a>
+      </div>
+      <p style="color:#D9E2EF; margin-top:20px;">💬 Vous hésitez encore ? <a href="https://wa.me/2250504775774?text=Bonjour%2C%20j'ai%20une%20question%20avant%20de%20m'inscrire." style="color:var(--gold-light);">Parlons-en sur WhatsApp</a></p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>TAPA CONSEIL — Beyond the limit</p>
+      <p><a href="mailto:contact@tapaconseilagence.com">contact@tapaconseilagence.com</a> · WhatsApp <a href="https://wa.me/2250504775774">+225 05 04 77 57 74</a> · <a href="/blog.html">Blog</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('form-reservation-presentiel')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const el = document.getElementById('resa-resultat');
+      const bouton = e.target.querySelector('button');
+      bouton.disabled = true;
+      try {
+        const res = await fetch('/api/reservations-presentiel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nom: document.getElementById('resa-nom').value,
+            prenom: document.getElementById('resa-prenom').value,
+            whatsapp: document.getElementById('resa-whatsapp').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Une erreur est survenue.');
+        e.target.innerHTML = '<p style="color:#0B6E4F; font-weight:600;">✅ Réservation enregistrée ! On vous contacte bientôt sur WhatsApp.</p>';
+      } catch (err) {
+        el.innerHTML = `<p style="color:#C0392B; font-size:13px;">${err.message}</p>`;
+        bouton.disabled = false;
+      }
+    });
+
+    // Bande de cours BRVM — version publique, aucune authentification requise.
+    (async () => {
+      try {
+        const res = await fetch('/api/public/cours-marche');
+        const { titres } = await res.json();
+        renderTickerBanner(document.getElementById('ticker-banner'), titres);
+      } catch (e) {}
+    })();
+
+  </script>
+
+</body>
+</html>

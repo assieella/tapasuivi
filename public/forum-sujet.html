@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forum — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/forum.html">← Forum</a></div>
+  <div class="container">
+    <div class="card" id="sujet-content"><p>Chargement...</p></div>
+    <div class="card">
+      <h2>Réponses</h2>
+      <div id="reponses-content"></div>
+      <div style="margin-top:16px;">
+        <label>Ta réponse</label>
+        <textarea id="nouvelle-reponse" rows="3" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;"></textarea>
+        <button onclick="repondre()">Répondre</button>
+        <div id="resultat-reponse"></div>
+      </div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const idSujet = new URLSearchParams(window.location.search).get('id');
+
+    async function chargerSujet() {
+      const { sujet, reponses } = await apiCall(`/api/forum/${idSujet}`);
+      document.getElementById('sujet-content').innerHTML = `
+        <h1>${sujet.titre}</h1>
+        <p style="font-size:13px; color:#777; margin-bottom:12px;">Par ${sujet.prenom || sujet.full_name} — ${new Date(sujet.created_at).toLocaleDateString('fr-FR')}</p>
+        <p style="white-space:pre-wrap;">${sujet.contenu}</p>
+      `;
+      document.getElementById('reponses-content').innerHTML = reponses.length ? reponses.map(r => `
+        <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+          <p style="font-size:13px; color:#777; margin-bottom:4px;"><strong>${r.prenom || r.full_name}</strong> — ${new Date(r.created_at).toLocaleDateString('fr-FR')}</p>
+          <p style="white-space:pre-wrap; margin:0;">${r.contenu}</p>
+        </div>
+      `).join('') : '<p style="color:#999;">Aucune réponse pour le moment.</p>';
+    }
+
+    async function repondre() {
+      const el = document.getElementById('resultat-reponse');
+      const contenu = document.getElementById('nouvelle-reponse').value;
+      if (!contenu.trim()) { el.innerHTML = '<p class="error">Le message est vide.</p>'; return; }
+      try {
+        await apiCall(`/api/forum/${idSujet}/reponses`, { method: 'POST', body: JSON.stringify({ contenu }) });
+        document.getElementById('nouvelle-reponse').value = '';
+        await chargerSujet();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      if (!idSujet) { document.getElementById('sujet-content').innerHTML = '<p class="error">Aucun sujet spécifié.</p>'; return; }
+      try { await chargerSujet(); }
+      catch (e) { document.getElementById('sujet-content').innerHTML = `<p class="error">${e.message}</p>`; }
+    })();
+  </script>
+</body>
+</html>
