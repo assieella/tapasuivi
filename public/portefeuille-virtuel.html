@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portefeuille virtuel — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .bandeau-virtuel { background: linear-gradient(90deg, #6C4FA1, #8A6FC7); color: white; padding: 14px 20px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; text-align: center; }
+  .stat-box { background:#F5F7FA; border-radius:8px; padding:14px 18px; text-align:center; flex:1; min-width:140px; }
+  .stat-box .valeur { font-size:20px; font-weight:700; color:var(--navy); }
+  .stat-box .libelle { font-size:12px; color:#777; margin-top:2px; }
+  .table-ordres { width:100%; border-collapse:collapse; font-size:13px; }
+  .table-ordres th { text-align:left; padding:8px 10px; background:var(--navy); color:white; }
+  .table-ordres td { padding:8px 10px; border-bottom:1px solid var(--border); }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="bandeau-virtuel">🎓 PORTEFEUILLE VIRTUEL — Argent fictif, aucun risque réel. Un espace pour vous entraîner à passer des ordres.</div>
+
+    <div class="card">
+      <h1>Mon portefeuille virtuel</h1>
+      <div id="stats-content" style="display:flex; gap:12px; flex-wrap:wrap;"><p>Chargement...</p></div>
+      <p style="font-size:12px; color:#777; margin-top:10px;">Des frais de courtage fictifs de 1% sont appliqués à chaque ordre (achat comme vente) — comme dans la réalité avec une SGI, pour que l'exercice reste réaliste.</p>
+      <button onclick="reinitialiser()" style="width:auto; background:#C0392B; margin-top:10px;">↺ Réinitialiser mon portefeuille virtuel</button>
+    </div>
+
+    <div class="card">
+      <h2>Passer un ordre</h2>
+      <label>Titre</label><select id="ordre-titre"></select>
+      <p id="cours-actuel" style="font-size:13px; color:#666;"></p>
+      <label>Sens</label>
+      <select id="ordre-sens">
+        <option value="achat">Acheter</option>
+        <option value="vente">Vendre</option>
+      </select>
+
+      <label>Type d'ordre</label>
+      <select id="ordre-type-ordre">
+        <option value="marche">Au marché</option>
+        <option value="limite">À cours limité</option>
+      </select>
+      <p id="explication-type-ordre" style="font-size:12px; color:#888; margin-top:2px;"></p>
+
+      <div id="zone-prix-limite" style="display:none;">
+        <label>Prix limite (FCFA)</label><input type="number" id="ordre-prix-limite" placeholder="Ex: 30000">
+      </div>
+
+      <label>Quantité</label><input type="number" id="ordre-quantite" min="1" placeholder="Ex: 10">
+      <p id="estimation-ordre" style="font-size:13px; color:#666;"></p>
+      <button onclick="passerOrdre()">Passer l'ordre</button>
+      <div id="resultat-ordre"></div>
+    </div>
+
+    <div class="card">
+      <h2>Historique des ordres</h2>
+      <div id="historique-ordres"><p style="color:#999;">Aucun ordre passé pour le moment.</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Positions actuelles</h2>
+      <div id="positions-content"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let coursParTicker = {};
+
+    async function chargerTitres() {
+      const { titres } = await apiCall('/api/titres');
+      titres.forEach(t => { if (t.cours) coursParTicker[t.ticker] = t.cours; });
+      const options = titres.filter(t => t.cours).map(t => `<option value="${t.ticker}">${t.ticker} — ${t.nom}</option>`).join('');
+      document.getElementById('ordre-titre').innerHTML = options;
+      afficherCoursEtEstimation();
+    }
+
+    const EXPLICATIONS_TYPE_ORDRE = {
+      marche: "Exécuté immédiatement, au dernier cours connu — celui affiché juste au-dessus.",
+      limite: "N'est exécuté que si le cours atteint ton prix limite (à l'achat) ou le dépasse (à la vente). Reste \"en attente\" jusque-là."
+    };
+
+    function gererAffichageTypeOrdre() {
+      const typeOrdre = document.getElementById('ordre-type-ordre').value;
+      document.getElementById('explication-type-ordre').textContent = EXPLICATIONS_TYPE_ORDRE[typeOrdre];
+      document.getElementById('zone-prix-limite').style.display = typeOrdre === 'limite' ? 'block' : 'none';
+      afficherCoursEtEstimation();
+    }
+
+    function afficherCoursEtEstimation() {
+      const ticker = document.getElementById('ordre-titre').value;
+      const cours = coursParTicker[ticker];
+      document.getElementById('cours-actuel').textContent = cours ? `Dernier cours connu : ${Number(cours).toLocaleString('fr-FR')} FCFA` : '';
+
+      const quantite = Number(document.getElementById('ordre-quantite').value) || 0;
+      const sens = document.getElementById('ordre-sens').value;
+      const typeOrdre = document.getElementById('ordre-type-ordre').value;
+      const elEstim = document.getElementById('estimation-ordre');
+
+      const prixReference = typeOrdre === 'limite' ? Number(document.getElementById('ordre-prix-limite').value) || 0 : cours;
+      if (!prixReference || !quantite) { elEstim.textContent = ''; return; }
+
+      const montant = quantite * prixReference;
+      const frais = Math.round(montant * 0.01);
+      const prefixe = typeOrdre === 'limite' ? 'Si exécuté : ' : '';
+      elEstim.innerHTML = sens === 'achat'
+        ? `${prefixe}Coût estimé : <strong>${(montant + frais).toLocaleString('fr-FR')} FCFA</strong> (dont ${frais.toLocaleString('fr-FR')} FCFA de frais fictifs)`
+        : `${prefixe}Tu recevrais environ : <strong>${(montant - frais).toLocaleString('fr-FR')} FCFA</strong> (après ${frais.toLocaleString('fr-FR')} FCFA de frais fictifs)`;
+    }
+
+    async function chargerPortefeuille() {
+      const { solde_fictif, positions, valeur_totale, ordres } = await apiCall('/api/portefeuille-virtuel');
+
+      document.getElementById('stats-content').innerHTML = `
+        <div class="stat-box"><div class="valeur">${solde_fictif.toLocaleString('fr-FR')} FCFA</div><div class="libelle">Solde fictif disponible</div></div>
+        <div class="stat-box"><div class="valeur">${valeur_totale.toLocaleString('fr-FR')} FCFA</div><div class="libelle">Valeur totale (solde + positions)</div></div>
+      `;
+
+      const elPos = document.getElementById('positions-content');
+      elPos.innerHTML = positions.length ? positions.map(p => `
+        <div class="titre-row">
+          <span class="ticker-code">${p.ticker}</span>
+          <span class="titre-nom">${p.quantite_detenue} actions — prix moyen ${p.prix_moyen_achat.toLocaleString('fr-FR')} FCFA</span>
+          <span style="color:${(p.plus_value || 0) >= 0 ? '#0B6E4F' : '#C0392B'}; font-weight:600;">${p.valeur_actuelle !== null ? p.valeur_actuelle.toLocaleString('fr-FR') + ' FCFA' : '—'}</span>
+        </div>
+      `).join('') : '<p style="color:#999;">Aucune position virtuelle pour le moment.</p>';
+
+      const LABELS_STATUT = { execute: '✅ Exécuté', en_attente: '⏳ En attente', annule: '❌ Annulé' };
+      const elOrdres = document.getElementById('historique-ordres');
+      elOrdres.innerHTML = ordres.length ? `
+        <table class="table-ordres">
+          <thead><tr><th>Date</th><th>Titre</th><th>Sens</th><th>Type</th><th>Quantité</th><th>Prix</th><th>Statut</th><th></th></tr></thead>
+          <tbody>${ordres.map(o => `
+            <tr>
+              <td>${new Date(o.date_ordre).toLocaleDateString('fr-FR')}</td>
+              <td>${o.ticker}</td>
+              <td>${o.type === 'achat' ? '🟢 Achat' : '🔴 Vente'}</td>
+              <td>${o.type_ordre === 'limite' ? `À ${Number(o.prix_limite).toLocaleString('fr-FR')} FCFA` : 'Au marché'}</td>
+              <td>${o.quantite}</td>
+              <td>${o.prix_execution ? Number(o.prix_execution).toLocaleString('fr-FR') + ' FCFA' : '—'}</td>
+              <td>${LABELS_STATUT[o.statut]}</td>
+              <td>${o.statut === 'en_attente' ? `<button onclick="annulerOrdre(${o.id})" style="width:auto; padding:2px 8px; font-size:11px; background:#C0392B;">Annuler</button>` : ''}</td>
+            </tr>
+          `).join('')}</tbody>
+        </table>
+      ` : '<p style="color:#999;">Aucun ordre passé pour le moment.</p>';
+    }
+
+    async function passerOrdre() {
+      const el = document.getElementById('resultat-ordre');
+      const ticker = document.getElementById('ordre-titre').value;
+      const type = document.getElementById('ordre-sens').value;
+      const type_ordre = document.getElementById('ordre-type-ordre').value;
+      const prix_limite = Number(document.getElementById('ordre-prix-limite').value) || null;
+      const quantite = Number(document.getElementById('ordre-quantite').value);
+      if (!ticker || !quantite) { el.innerHTML = '<p class="error">Choisis un titre et une quantité.</p>'; return; }
+      if (type_ordre === 'limite' && !prix_limite) { el.innerHTML = '<p class="error">Indique un prix limite.</p>'; return; }
+      try {
+        await apiCall('/api/portefeuille-virtuel/ordre', { method: 'POST', body: JSON.stringify({ ticker, type, quantite, type_ordre, prix_limite }) });
+        el.innerHTML = type_ordre === 'limite'
+          ? '<p class="success">✅ Ordre à cours limité enregistré — en attente que le prix soit atteint.</p>'
+          : '<p class="success">✅ Ordre exécuté.</p>';
+        document.getElementById('ordre-quantite').value = '';
+        afficherCoursEtEstimation();
+        await chargerPortefeuille();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    async function annulerOrdre(id) {
+      if (!confirm('Annuler cet ordre en attente ?')) return;
+      await apiCall(`/api/portefeuille-virtuel/ordre/${id}/annuler`, { method: 'POST' });
+      await chargerPortefeuille();
+    }
+
+    async function reinitialiser() {
+      if (!confirm('Réinitialiser ton portefeuille virtuel ? Tous les ordres seront effacés et le solde repartira à 1 000 000 FCFA fictifs.')) return;
+      await apiCall('/api/portefeuille-virtuel/reinitialiser', { method: 'POST' });
+      await chargerPortefeuille();
+    }
+
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      try {
+        await chargerTitres();
+        await chargerPortefeuille();
+        gererAffichageTypeOrdre();
+        document.getElementById('ordre-titre').addEventListener('change', afficherCoursEtEstimation);
+        document.getElementById('ordre-sens').addEventListener('change', afficherCoursEtEstimation);
+        document.getElementById('ordre-type-ordre').addEventListener('change', gererAffichageTypeOrdre);
+        document.getElementById('ordre-prix-limite').addEventListener('input', afficherCoursEtEstimation);
+        document.getElementById('ordre-quantite').addEventListener('input', afficherCoursEtEstimation);
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        document.querySelector('.container').innerHTML += `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comptes gratuits — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>🎁 Comptes gratuits</h1>
+      <p style="font-size:13px; color:#666;">Les personnes inscrites en libre-service (portefeuille virtuel, outils gratuits). Séparés de tes vrais clients — tu ne discutes pas avec eux via la messagerie, seulement s'ils deviennent client payant.</p>
+      <div id="liste-comptes"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function chargerComptes() {
+      const el = document.getElementById('liste-comptes');
+      try {
+        const { comptes } = await apiCall('/api/admin/comptes-gratuits');
+        if (!comptes.length) { el.innerHTML = '<p style="color:#999;">Aucun compte gratuit pour le moment.</p>'; return; }
+        el.innerHTML = comptes.map(c => `
+          <div class="titre-row" style="display:block;">
+            <strong>${c.full_name}</strong>
+            ${c.email_confirme ? '<span style="color:#0B6E4F; font-size:12px;"> ✅ Email confirmé</span>' : '<span style="color:#B8891E; font-size:12px;"> ⏳ Email non confirmé</span>'}
+            <br><span style="font-size:13px; color:#666;">📧 ${c.email}${c.phone ? ` — 📱 ${c.phone}` : ''} — inscrit le ${new Date(c.created_at).toLocaleDateString('fr-FR')}</span>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      await chargerComptes();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan d'investissement — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div>
+    <a href="/dashboard.html">← Mon espace</a>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h1>Votre plan d'investissement</h1>
+      <p>Indiquez votre objectif : nous vérifions s'il est réaliste avec votre profil et vous proposons un ajustement si besoin.</p>
+
+      <div id="strategies-content"><p>Chargement des stratégies...</p></div>
+
+      <form id="plan-form" style="display:none;">
+        <label>Objectif (montant visé en FCFA)</label>
+        <input type="number" id="objectif" min="1" required>
+        <label>Horizon (en années)</label>
+        <input type="number" id="horizon" min="1" max="40" required>
+        <label>Montant initial disponible (FCFA)</label>
+        <input type="number" id="initial" min="0" value="0" required>
+        <label>Versement mensuel prévu (FCFA)</label>
+        <input type="number" id="versement" min="0" value="0" required>
+        <button type="submit">Analyser mon plan</button>
+      </form>
+
+      <div id="result-area"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => { const user = await requireLogin(); if (!user) return; await chargerStrategies(); })();
+
+    let strategieChoisie = null;
+
+    async function chargerStrategies() {
+      const { strategies } = await apiCall('/api/plan/strategies');
+      const el = document.getElementById('strategies-content');
+      el.innerHTML = `
+        <h2>Choisissez votre stratégie d'investissement</h2>
+        <p style="font-size:14px; color:#666;">Chaque stratégie oriente les titres que nous vous suggérerons chaque mois.</p>
+        ${Object.entries(strategies).map(([cle, s]) => `
+          <label class="option" style="display:block;"><input type="radio" name="strategie" value="${cle}"><strong>${s.nom}</strong><br><span style="font-size:13px; color:#555;">${s.description}</span></label>
+        `).join('')}
+        <button id="btn-valider-strategie">Continuer</button>
+      `;
+      document.getElementById('btn-valider-strategie').addEventListener('click', () => {
+        const choix = document.querySelector('input[name="strategie"]:checked');
+        if (!choix) { alert('Merci de choisir une stratégie.'); return; }
+        strategieChoisie = choix.value;
+        el.style.display = 'none';
+        document.getElementById('plan-form').style.display = 'block';
+      });
+    }
+
+    let lastPayload = null;
+
+    document.getElementById('plan-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      lastPayload = {
+        objectif_montant: Number(document.getElementById('objectif').value),
+        horizon_mois: Number(document.getElementById('horizon').value) * 12,
+        montant_initial: Number(document.getElementById('initial').value),
+        versement_mensuel: Number(document.getElementById('versement').value),
+        strategie: strategieChoisie
+      };
+      await soumettre(false);
+    });
+
+    async function soumettre(accepter_correction) {
+      try {
+        const { plan, evaluation } = await apiCall('/api/plan', { method: 'POST', body: JSON.stringify({ ...lastPayload, accepter_correction }) });
+        let html = `<div class="${plan.objectif_realiste ? 'success' : 'alert'}"><h3>${plan.objectif_realiste ? '✅ Objectif réaliste' : '⚠️ Objectif à ajuster'}</h3><p>Montant projeté à l'horizon choisi : <strong>${plan.montant_projete.toLocaleString('fr-FR')} FCFA</strong></p>`;
+        if (!evaluation.objectif_realiste) {
+          html += `<p>Pour atteindre <strong>${lastPayload.objectif_montant.toLocaleString('fr-FR')} FCFA</strong> au même horizon, portez votre versement mensuel à environ <strong>${evaluation.versement_recommande?.toLocaleString('fr-FR')} FCFA</strong>.</p>
+          <p>Ou, avec le même versement, l'objectif serait atteignable en environ <strong>${evaluation.horizon_recommande_mois ? Math.ceil(evaluation.horizon_recommande_mois/12) + ' ans' : 'plus de 40 ans'}</strong>.</p>`;
+          if (!accepter_correction) html += `<button onclick="soumettre(true)">Accepter le versement ajusté</button> <button class="btn-secondary" onclick="document.getElementById('result-area').innerHTML=''">Modifier mes chiffres</button>`;
+        }
+        html += `<p>Un email récapitulatif vous a été envoyé.</p></div>`;
+        document.getElementById('result-area').innerHTML = html;
+      } catch (err) { document.getElementById('result-area').innerHTML = `<p class="error">${err.message}</p>`; }
+    }
+  </script>
+</body>
+</html>

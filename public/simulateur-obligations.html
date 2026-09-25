@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur d'obligations — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .resultat-box { background:#F5F7FA; border-radius:10px; padding:20px; margin-top:16px; }
+  .resultat-box .gros-chiffre { font-size:28px; font-weight:700; color:var(--gold); font-family: Georgia, serif; }
+  .table-annees { width:100%; border-collapse:collapse; font-size:14px; margin-top:12px; }
+  .table-annees th { text-align:left; padding:8px; background:var(--navy); color:white; }
+  .table-annees td { padding:8px; border-bottom:1px solid var(--border); }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>📜 Simulateur d'obligations</h1>
+      <p style="font-size:14px; color:#666;">Simule ce que rapporterait une obligation, selon ses propres conditions (montant, taux, durée) — utile avant de souscrire à une offre précise.</p>
+
+      <label>Montant investi (FCFA)</label>
+      <input type="number" id="montant-initial" placeholder="Ex: 1000000" min="1">
+
+      <label>Taux d'intérêt annuel (%)</label>
+      <input type="number" id="taux-interet" placeholder="Ex: 6.5" step="0.01" min="0">
+
+      <label>Durée (en années)</label>
+      <input type="number" id="duree-annees" placeholder="Ex: 5" min="1">
+
+      <button onclick="simuler()">Simuler</button>
+      <div id="resultat-simulation"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    function simuler() {
+      const el = document.getElementById('resultat-simulation');
+      const montant = Number(document.getElementById('montant-initial').value);
+      const taux = Number(document.getElementById('taux-interet').value);
+      const duree = Number(document.getElementById('duree-annees').value);
+
+      if (!montant || montant <= 0) { el.innerHTML = '<p class="error">Indique le montant investi.</p>'; return; }
+      if (!taux || taux <= 0) { el.innerHTML = '<p class="error">Indique le taux d\'intérêt annuel.</p>'; return; }
+      if (!duree || duree <= 0) { el.innerHTML = '<p class="error">Indique la durée en années.</p>'; return; }
+
+      // Obligation classique : coupon fixe versé chaque année sur le montant initial
+      // (pas d'intérêts composés — le principal est remboursé intact à l'échéance).
+      const couponAnnuel = Math.round(montant * (taux / 100));
+      const totalInterets = couponAnnuel * duree;
+      const montantTotalPercu = montant + totalInterets;
+
+      let ligneAnnees = '';
+      for (let an = 1; an <= duree; an++) {
+        ligneAnnees += `<tr><td>Année ${an}</td><td>${couponAnnuel.toLocaleString('fr-FR')} FCFA</td></tr>`;
+      }
+
+      el.innerHTML = `
+        <div class="resultat-box">
+          <p>Avec <strong>${montant.toLocaleString('fr-FR')} FCFA</strong> investis à <strong>${taux}%</strong> sur <strong>${duree} an${duree > 1 ? 's' : ''}</strong>, voici ce que ça donnerait :</p>
+
+          <p style="margin-top:14px;">Coupon annuel (intérêt versé chaque année) :</p>
+          <p class="gros-chiffre">${couponAnnuel.toLocaleString('fr-FR')} FCFA</p>
+
+          <p style="margin-top:14px;">Total des intérêts perçus sur ${duree} an${duree > 1 ? 's' : ''} :</p>
+          <p class="gros-chiffre">${totalInterets.toLocaleString('fr-FR')} FCFA</p>
+
+          <p style="margin-top:14px;">Montant total perçu à l'échéance (capital remboursé + intérêts cumulés) :</p>
+          <p class="gros-chiffre">${montantTotalPercu.toLocaleString('fr-FR')} FCFA</p>
+
+          <table class="table-annees">
+            <thead><tr><th>Période</th><th>Coupon perçu</th></tr></thead>
+            <tbody>${ligneAnnees}</tbody>
+          </table>
+
+          <p style="font-size:12px; color:#777; margin-top:14px;">⚠️ Cette simulation suppose un coupon fixe versé chaque année sur le montant initial, et le remboursement intégral du capital à l'échéance — les conditions réelles varient selon chaque obligation (fréquence de versement, risque de l'émetteur, possibilité de remboursement anticipé...). Vérifiez toujours les conditions exactes de l'offre avant de souscrire, et n'hésitez pas à en discuter avec votre conseillère.</p>
+        </div>
+      `;
+    }
+
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+    })();
+  </script>
+</body>
+</html>
