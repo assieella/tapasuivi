@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sociétés cotées BRVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="ticker-banner" id="ticker-banner" style="display:none;"></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>Sociétés cotées à la BRVM</h1>
+      <p>48 sociétés réparties dans 8 pays de l'UEMOA. Filtrez par code, nom ou pays (ex: « ETIT », « Togo », « banque »).</p>
+      <input type="text" id="filtre" placeholder="Rechercher... (ex: ETIT, Togo, Banque)" autocomplete="off">
+      <div id="liste-titres" style="margin-top:16px;"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let tousLesTitres = [];
+    function afficherTitres(liste) {
+      const el = document.getElementById('liste-titres');
+      if (!liste.length) { el.innerHTML = '<p>Aucun titre ne correspond à votre recherche.</p>'; return; }
+      el.innerHTML = liste.map(t => {
+        const variation = t.variation_pct !== null ? Number(t.variation_pct) : null;
+        const signe = variation !== null && variation > 0 ? '+' : '';
+        const coursHtml = t.cours !== null ? `${Number(t.cours).toLocaleString('fr-FR')} FCFA <span style="color:${variation > 0 ? '#0B6E4F' : (variation < 0 ? '#C0392B' : '#DAAA37')}">${signe}${variation}%</span>` : `<span style="color:#999; font-size:12px;">Cours non renseigné</span>`;
+        return `<a class="titre-row" href="/titre.html?ticker=${t.ticker}"><span class="ticker-code">${t.ticker}</span><span class="titre-nom">${t.nom}</span><span class="titre-pays">${t.pays || ''}</span><span class="titre-cours">${coursHtml}</span></a>`;
+      }).join('');
+    }
+    document.getElementById('filtre').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) { afficherTitres(tousLesTitres); return; }
+      afficherTitres(tousLesTitres.filter(t => t.ticker.toLowerCase().includes(q) || (t.nom || '').toLowerCase().includes(q) || (t.pays || '').toLowerCase().includes(q) || (t.secteur || '').toLowerCase().includes(q)));
+    });
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      try {
+        const { titres } = await apiCall('/api/titres');
+        tousLesTitres = titres;
+        renderTickerBanner(document.getElementById('ticker-banner'), titres);
+        afficherTitres(titres);
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); document.getElementById('ticker-banner').style.display = 'none'; }
+        else document.getElementById('liste-titres').innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

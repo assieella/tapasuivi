@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fonds OPCVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .table-opcvm { width:100%; border-collapse:collapse; font-size:14px; }
+  .table-opcvm th { text-align:left; padding:10px 12px; background:var(--navy); color:white; position:sticky; top:0; }
+  .table-opcvm th:first-child { border-radius:8px 0 0 0; }
+  .table-opcvm th:last-child { border-radius:0 8px 0 0; }
+  .table-opcvm td { padding:10px 12px; border-bottom:1px solid var(--border); }
+  .table-opcvm tr.ligne-fonds { cursor:pointer; transition: background 0.15s; }
+  .table-opcvm tr.ligne-fonds:hover { background:#F5F7FA; }
+  .table-opcvm .perf-positive { color:#0B6E4F; font-weight:700; }
+  .table-opcvm .perf-negative { color:#C0392B; font-weight:700; }
+  .table-scroll { overflow-x:auto; border-radius:8px; border:1px solid var(--border); }
+  @media (max-width: 700px) { .table-opcvm { font-size:12px; } .table-opcvm th, .table-opcvm td { padding:8px 6px; } }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>💼 Fonds OPCVM / FCP</h1>
+      <p style="font-size:14px; color:#666;">Pour ceux qui préfèrent une gestion collective plutôt que choisir leurs titres eux-mêmes. Clique sur un fonds pour voir son évolution en détail.</p>
+      <div id="liste-fonds"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      const el = document.getElementById('liste-fonds');
+      try {
+        const { fonds } = await apiCall('/api/fonds-opcvm');
+        if (!fonds.length) { el.innerHTML = '<p style="color:#999;">Aucun fonds renseigné pour le moment.</p>'; return; }
+
+        // Triés par performance depuis le début de l'année, la meilleure en premier —
+        // les fonds sans performance connue restent en bas de la liste.
+        const fondsTries = [...fonds].sort((a, b) => (b.perf_ytd ?? -Infinity) - (a.perf_ytd ?? -Infinity));
+
+        const classePerf = (v) => v === null ? '' : (v >= 0 ? 'perf-positive' : 'perf-negative');
+        const afficherPerf = (v) => v === null ? '—' : `${v >= 0 ? '+' : ''}${v}%`;
+
+        el.innerHTML = `
+          <div class="table-scroll">
+            <table class="table-opcvm">
+              <thead>
+                <tr>
+                  <th>Fonds</th>
+                  <th>Catégorie</th>
+                  <th>VL (FCFA)</th>
+                  <th>Date</th>
+                  <th>Depuis janvier</th>
+                  <th>1 an</th>
+                  <th>3 ans</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${fondsTries.map(f => `
+                  <tr class="ligne-fonds" onclick="window.location.href='/fonds-opcvm-detail.html?id=${f.id}'">
+                    <td><strong>${f.nom}</strong><br><span style="font-size:12px; color:#888;">${f.societe_gestion || ''}</span></td>
+                    <td>${f.categorie ? `<span class="badge badge-equilibre">${f.categorie}</span>` : '—'}</td>
+                    <td>${f.valeur_liquidative ? Number(f.valeur_liquidative).toLocaleString('fr-FR') : '—'}</td>
+                    <td style="font-size:12px; color:#777;">${f.date_vl ? new Date(f.date_vl).toLocaleDateString('fr-FR') : '—'}</td>
+                    <td class="${classePerf(f.perf_ytd)}">${afficherPerf(f.perf_ytd)}</td>
+                    <td class="${classePerf(f.perf_1an)}">${afficherPerf(f.perf_1an)}</td>
+                    <td class="${classePerf(f.perf_3ans)}">${afficherPerf(f.perf_3ans)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

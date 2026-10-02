@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suis-je prête à investir à la BRVM ? — TEST TAPA</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .question-box { background: #F5F7FA; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; }
+  .question-box p { font-weight: 600; margin-bottom: 10px; }
+  .options { display: flex; gap: 16px; flex-wrap: wrap; }
+  .options label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 400; }
+  .barre-progression { height: 8px; background: #E1E5EC; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+  .barre-progression-remplie { height: 100%; background: var(--gold); transition: width 0.3s; }
+  .resultat-pret { background: #E8F5EE; border: 2px solid #0B6E4F; }
+  .resultat-presque { background: #FDF6E8; border: 2px solid #B8891E; }
+  .resultat-pas-encore { background: #FBEAEA; border: 2px solid #C0392B; }
+  .resultat-box { border-radius: 12px; padding: 24px; text-align: center; margin: 20px 0; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/">Accueil</a></div>
+  <div class="container" style="max-width: 700px;">
+
+    <div class="card" id="etape-intro">
+      <h1>TEST TAPA</h1>
+      <h2 style="color: var(--navy); font-weight: 400;">Suis-je prête à investir à la BRVM ?</h2>
+      <p>10 questions rapides pour faire le point sur votre situation avant de vous lancer. Réponds honnêtement — il n'y a pas de bonne ou mauvaise réponse, juste ta vraie situation.</p>
+      <button onclick="commencerTest()">Commencer le test</button>
+    </div>
+
+    <div class="card" id="etape-questions" style="display:none;">
+      <div class="barre-progression"><div class="barre-progression-remplie" id="barre" style="width:0%;"></div></div>
+      <div id="questions-content"></div>
+      <button onclick="voirResultat()" id="bouton-resultat" style="display:none;">Voir mon résultat</button>
+    </div>
+
+    <div class="card" id="etape-email" style="display:none;">
+      <h2>Ton résultat est prêt !</h2>
+      <p>Entre ton email pour le découvrir immédiatement.</p>
+      <label>Prénom</label><input type="text" id="lead-prenom">
+      <label>Email</label><input type="email" id="lead-email" required>
+      <label>WhatsApp (optionnel)</label><input type="tel" id="lead-whatsapp" placeholder="+225...">
+      <button onclick="soumettreEtVoirResultat()">Voir mon résultat</button>
+      <div id="erreur-email"></div>
+    </div>
+
+    <div class="card" id="etape-resultat" style="display:none;">
+      <div id="resultat-content"></div>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const QUESTIONS = [
+      "Je connais précisément le montant de mes revenus et de mes dépenses mensuelles.",
+      "J'arrive à épargner régulièrement une partie de mes revenus.",
+      "J'ai une épargne de précaution pour faire face à un imprévu.",
+      "Mes dettes sont sous contrôle et je n'ai pas de dette urgente à régler.",
+      "L'argent que je souhaite investir n'est pas nécessaire pour mes dépenses quotidiennes.",
+      "Je suis prête à laisser mon argent investi pendant plusieurs années.",
+      "Je comprends qu'investir en actions comporte un risque de perte en capital.",
+      "Je sais ce qu'est une action, un dividende et une plus-value.",
+      "Je ne compte pas investir uniquement parce qu'une personne m'a dit qu'une action allait « monter ».",
+      "Si mon portefeuille baisse temporairement de 20 %, je suis capable de ne pas paniquer et de prendre une décision réfléchie."
+    ];
+    const reponses = Array(10).fill(null);
+
+    function commencerTest() {
+      document.getElementById('etape-intro').style.display = 'none';
+      document.getElementById('etape-questions').style.display = 'block';
+      document.getElementById('questions-content').innerHTML = QUESTIONS.map((q, i) => `
+        <div class="question-box">
+          <p>${i + 1}. ${q}</p>
+          <div class="options">
+            <label><input type="radio" name="q${i}" value="A" onchange="repondre(${i}, 'A')"> A = Oui, tout à fait</label>
+            <label><input type="radio" name="q${i}" value="B" onchange="repondre(${i}, 'B')"> B = Un peu / pas encore</label>
+            <label><input type="radio" name="q${i}" value="C" onchange="repondre(${i}, 'C')"> C = Non</label>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function repondre(index, valeur) {
+      reponses[index] = valeur;
+      const repondues = reponses.filter(r => r !== null).length;
+      document.getElementById('barre').style.width = `${(repondues / 10) * 100}%`;
+      document.getElementById('bouton-resultat').style.display = repondues === 10 ? 'block' : 'none';
+    }
+
+    function voirResultat() {
+      document.getElementById('etape-questions').style.display = 'none';
+      document.getElementById('etape-email').style.display = 'block';
+    }
+
+    async function soumettreEtVoirResultat() {
+      const el = document.getElementById('erreur-email');
+      const email = document.getElementById('lead-email').value;
+      if (!email) { el.innerHTML = '<p class="error">L\'email est requis.</p>'; return; }
+      try {
+        const res = await fetch('/api/test-tapa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prenom: document.getElementById('lead-prenom').value,
+            email,
+            whatsapp: document.getElementById('lead-whatsapp').value,
+            reponses
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) { el.innerHTML = `<p class="error">${data.error}</p>`; return; }
+        afficherResultat(data.score, data.palier);
+      } catch (e) { el.innerHTML = `<p class="error">Une erreur est survenue, réessaie.</p>`; }
+    }
+
+    function afficherResultat(score, palier) {
+      document.getElementById('etape-email').style.display = 'none';
+      document.getElementById('etape-resultat').style.display = 'block';
+
+      const CONTENU = {
+        pret: {
+          classe: 'resultat-pret', titre: '🟢 TU ES PRÊTE',
+          texte: "Tu as de bonnes bases financières et psychologiques pour commencer à investir à la BRVM.",
+          suite: "Prochaine étape : définir ton objectif, ton budget d'investissement et ton profil de risque — c'est exactement ce qu'on fait ensemble dans BRVM Starter.",
+          bouton: { texte: "Rejoindre BRVM Starter", lien: "/#tarifs" }
+        },
+        presque_pret: {
+          classe: 'resultat-presque', titre: '🟡 PRESQUE PRÊTE',
+          texte: "Tu as de bonnes bases, mais quelques éléments doivent être renforcés.",
+          suite: "Avant d'investir davantage, identifie les points où tu as répondu B ou C — c'est exactement ce que l'accompagnement BRVM Starter t'aide à consolider, pas à pas.",
+          bouton: { texte: "Découvrir BRVM Starter", lien: "/#tarifs" }
+        },
+        pas_encore: {
+          classe: 'resultat-pas-encore', titre: '🔴 PAS ENCORE',
+          texte: "Ce n'est pas un échec. C'est un signal.",
+          suite: "Ta priorité est d'abord de renforcer ta situation financière et tes connaissances avant de prendre des risques avec ton argent — commence par nos ressources gratuites, sans engagement.",
+          bouton: { texte: "Découvrir la BRVM gratuitement", lien: "/decouverte-brvm.html" }
+        }
+      };
+      const c = CONTENU[palier];
+
+      document.getElementById('resultat-content').innerHTML = `
+        <div class="resultat-box ${c.classe}">
+          <div style="font-size:32px; font-weight:700; color:var(--navy);">${score}/100</div>
+          <h2 style="margin-top:8px;">${c.titre}</h2>
+          <p>${c.texte}</p>
+        </div>
+        <p>${c.suite}</p>
+        <blockquote style="border-left:4px solid var(--gold); padding-left:16px; font-style:italic; margin:20px 0; color:var(--navy);">
+          « Avant de chercher le meilleur investissement, assure-toi d'être dans la meilleure situation pour investir. »
+        </blockquote>
+        <div style="text-align:center; margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+          <a class="cta" href="${c.bouton.lien}">${c.bouton.texte}</a>
+          <a class="cta-outline" href="https://wa.me/2250504775774?text=Bonjour%2C%20j'ai%20fait%20le%20TEST%20TAPA%20et%20j'aimerais%20en%20discuter.">Discuter sur WhatsApp</a>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

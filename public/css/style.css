@@ -1,0 +1,61 @@
+:root {
+  --navy: #0F2F59;
+  --navy-dark: #0A2140;
+  --gold: #DAAA37;
+  --gold-dark: #B8891E;
+  --bg: #F4F6F9;
+  --text: #1C2733;
+  --card: #ffffff;
+  --border: #E1E5EC;
+}
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+.topbar { background: var(--navy); color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+.topbar .brand { display: flex; align-items: center; gap: 12px; }
+.topbar .brand img { height: 40px; width: auto; display: block; }
+.topbar .brand-text { font-weight: 700; letter-spacing: 0.5px; }
+.topbar a { color: var(--gold); text-decoration: none; font-weight: 600; }
+.topbar a:hover { color: #f0d385; }
+.container { max-width: 640px; margin: 32px auto; padding: 0 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(15,47,89,0.06); }
+h1, h2, h3 { color: var(--navy); }
+label { display: block; font-weight: 600; margin: 16px 0 8px; }
+input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
+input:focus, select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(218,170,55,0.2); }
+.question { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.option { display: block; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; margin: 6px 0; cursor: pointer; }
+.option:hover { border-color: var(--gold); }
+.option input { width: auto; margin-right: 10px; }
+button { background: var(--navy); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+button:hover { background: var(--navy-dark); }
+.btn-secondary { background: white; color: var(--navy); border: 1px solid var(--navy); }
+.btn-secondary:hover { background: var(--bg); }
+.btn-gold { background: var(--gold); color: var(--navy-dark); }
+.btn-gold:hover { background: var(--gold-dark); color: white; }
+.error { color: #C0392B; margin-top: 10px; font-weight: 600; }
+.success { color: var(--navy); margin-top: 10px; font-weight: 600; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 13px; }
+.badge-prudent { background: #E4EAF2; color: var(--navy); }
+.badge-equilibre { background: #FCF3DC; color: var(--gold-dark); }
+.badge-dynamique { background: #FBE4CA; color: #A15C0F; }
+.badge-offensif { background: #FBE1E1; color: #B4302C; }
+.alert { background: #FCF3DC; border-left: 4px solid var(--gold); padding: 14px 16px; border-radius: 6px; margin: 16px 0; }
+table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--navy); }
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.tabs a { padding: 8px 16px; border-radius: 20px; text-decoration: none; color: var(--navy); border: 1px solid var(--border); font-size: 14px; }
+.tabs a.active { background: var(--navy); color: white; border-color: var(--navy); }
+.ticker-banner { background: var(--navy-dark); overflow: hidden; white-space: nowrap; padding: 10px 0; }
+.ticker-track { display: inline-block; padding-left: 100%; animation: ticker-scroll 60s linear infinite; }
+.ticker-item { display: inline-block; padding: 0 24px; font-size: 14px; font-weight: 600; color: white; }
+.ticker-item .up { color: #6FCF97; }
+.ticker-item .down { color: #FF8A80; }
+.ticker-item .flat { color: #DAAA37; }
+@keyframes ticker-scroll { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+.titre-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; text-decoration: none; color: var(--text); }
+.titre-row:hover { border-color: var(--gold); }
+.titre-row .ticker-code { font-weight: 700; color: var(--navy); width: 70px; }
+.titre-row .titre-nom { flex: 1; font-size: 14px; }
+.titre-row .titre-pays { font-size: 12px; color: #777; width: 110px; }
+.titre-row .titre-cours { text-align: right; width: 130px; font-weight: 600; }

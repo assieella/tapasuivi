@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads Découverte BRVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Leads Découverte BRVM</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+    <div class="card">
+      <h1>Leads — page Découverte BRVM</h1>
+      <p style="font-size:14px; color:#666;">Toute personne ayant rempli le formulaire sur la page publique <a href="/decouverte-brvm.html" target="_blank">/decouverte-brvm.html</a> apparaît ici (sans compte, juste ses coordonnées).</p>
+      <button class="btn-secondary" onclick="copierEmails()">📋 Copier les emails</button>
+      <button class="btn-secondary" onclick="copierWhatsapp()">📋 Copier les numéros WhatsApp</button>
+      <div id="liste-leads" style="margin-top:16px;"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let leads = [];
+    async function chargerLeads() {
+      const r = await apiCall('/api/admin/leads-decouverte');
+      leads = r.leads;
+      const el = document.getElementById('liste-leads');
+      if (!leads.length) { el.innerHTML = '<p style="color:#999;">Aucun lead pour le moment.</p>'; return; }
+      el.innerHTML = `
+        <table>
+          <thead><tr><th>Nom</th><th>Prénom</th><th>WhatsApp</th><th>Email</th><th>Le</th></tr></thead>
+          <tbody>${leads.map(l => `<tr><td>${l.nom}</td><td>${l.prenom}</td><td>${l.whatsapp}</td><td>${l.email}</td><td>${new Date(l.created_at).toLocaleDateString('fr-FR')}</td></tr>`).join('')}</tbody>
+        </table>
+        <p style="font-size:13px; color:#777; margin-top:10px;">${leads.length} lead(s) au total.</p>
+      `;
+    }
+    function copierEmails() { navigator.clipboard.writeText(leads.map(l => l.email).join(', ')); alert(`${leads.length} email(s) copié(s).`); }
+    function copierWhatsapp() { navigator.clipboard.writeText(leads.map(l => l.whatsapp).join(', ')); alert(`${leads.length} numéro(s) copié(s).`); }
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerLeads();
+    })();
+  </script>
+</body>
+</html>

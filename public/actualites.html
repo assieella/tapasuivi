@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualités — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  /* Colonne de lecture confortable : jamais plus étroite que ~600px pour du texte suivi —
+     évite les lignes hachées de 3-4 mots qu'on avait avant. */
+  #zone-actualites { font-size: 17px; line-height: 1.65; }
+  .selecteur-actu { max-width: 320px; margin-bottom: 24px; font-weight: 600; font-size: 16px; padding: 10px; }
+  .mise-en-page-actu { display: grid; grid-template-columns: 7fr 3fr; gap: 28px; align-items: start; }
+  .bandeau-section { background: var(--navy); color: white; font-weight: 700; text-transform: uppercase; font-size: 13px; letter-spacing: 1px; padding: 10px 16px; border-radius: 6px; display: inline-block; margin-bottom: 16px; }
+
+  /* Une seule colonne pour les cartes d'actualité : plus de grille 2 colonnes qui compressait
+     chaque carte à un tiers d'écran — chaque carte a maintenant toute la largeur disponible. */
+  .grille-cartes-actu { display: flex; flex-direction: column; gap: 16px; }
+  .carte-actu { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px 22px; cursor: pointer; }
+  .carte-actu .icone { font-size: 26px; margin-bottom: 8px; }
+  .carte-actu h3 { font-size: 20px; margin: 0 0 6px; line-height: 1.3; }
+  .carte-actu .date-actu { font-size: 13px; color: #999; }
+  .carte-actu .extrait { font-size: 17px; color: #444; margin-top: 8px; line-height: 1.6; }
+  .carte-actu .contenu-complet { display: none; margin-top: 16px; font-size: 17px; line-height: 1.65; border-top: 1px solid var(--border); padding-top: 14px; }
+  .carte-actu .contenu-complet h4 { font-size: 16px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px; }
+  .carte-actu .contenu-complet h4:first-child { margin-top: 0; }
+  .carte-actu .contenu-complet ul { padding-left: 22px; margin: 6px 0; }
+  .carte-actu .contenu-complet li { margin-bottom: 10px; }
+  .carte-actu.ouverte .contenu-complet { display: block; }
+  .carte-actu.ouverte .extrait { display: none; }
+  .carte-actu .voir-plus { color: var(--gold); font-weight: 600; font-size: 14px; margin-top: 10px; display: inline-block; }
+
+  .sidebar-marche { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .ligne-marche { display: flex; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .ligne-marche:last-child { border-bottom: none; }
+
+  @media (max-width: 800px) { .mise-en-page-actu { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>Actualités</h1>
+      <select id="selecteur-type" class="selecteur-actu">
+        <option value="boursieres">📊 Actualités boursières</option>
+        <option value="financieres">💹 Actualités financières</option>
+      </select>
+      <div id="zone-actualites"><p style="color:#999;">Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    // Convertit le markdown en ligne (gras, italique) — sans ça, les **...** du texte généré
+    // par l'IA s'affichaient tels quels, en astérisques bruts, au lieu d'un vrai gras.
+    function formaterInline(texte) {
+      return texte
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    }
+
+    function markdownEnSections(texte) {
+      // Découpe le texte par titres "##" en sections { titre, lignes[] } pour un rendu par carte.
+      const lignes = texte.split('\n').map(l => l.trim()).filter(Boolean);
+      const sections = [];
+      let courante = null;
+      for (const ligne of lignes) {
+        const mTitre = ligne.match(/^#{1,4}\s+(.*)/);
+        if (mTitre) { courante = { titre: mTitre[1], puces: [] }; sections.push(courante); continue; }
+        const mPuce = ligne.match(/^[-*]\s+(.*)/);
+        if (mPuce && courante) { courante.puces.push(mPuce[1]); continue; }
+        if (courante) courante.puces.push(ligne); // texte libre (ex: la phrase finale de contexte)
+      }
+      return sections;
+    }
+
+    function carteActualite(a, icone) {
+      const sections = markdownEnSections(a.contenu);
+      const premierePuce = sections[0]?.puces[0] || '';
+      const dateAffichee = a.publiee_le ? new Date(a.publiee_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
+      const contenuComplet = sections.map(s => `<h4>${formaterInline(s.titre)}</h4><ul>${s.puces.map(p => `<li>${formaterInline(p)}</li>`).join('')}</ul>`).join('');
+      const extraitTronque = premierePuce.slice(0, 130) + (premierePuce.length > 130 ? '…' : '');
+      return `
+        <div class="carte-actu" onclick="this.classList.toggle('ouverte')">
+          <div class="icone">${icone}</div>
+          <span class="date-actu">${dateAffichee}</span>
+          <h3>${formaterInline(a.titre)}</h3>
+          <p class="extrait">${formaterInline(extraitTronque)}<span class="voir-plus"> Lire la suite →</span></p>
+          <div class="contenu-complet">${contenuComplet}</div>
+        </div>
+      `;
+    }
+
+    async function afficherBoursieres() {
+      const el = document.getElementById('zone-actualites');
+      el.innerHTML = '<p style="color:#999;">Chargement...</p>';
+      try {
+        const [{ actualites }, { top5, flop5 }] = await Promise.all([
+          apiCall('/api/actualites'),
+          apiCall('/api/titres/marche/top-flop')
+        ]);
+
+        const cartesHtml = actualites.length
+          ? actualites.map(a => carteActualite(a, '📈')).join('')
+          : '<p style="color:#999;">Aucune actualité boursière publiée pour le moment.</p>';
+
+        const pointsMarcheHtml = [...top5, ...flop5].slice(0, 8).map(t => {
+          const hausse = Number(t.variation_pct) >= 0;
+          return `<div class="ligne-marche"><span><strong>${t.ticker}</strong></span><span style="color:${hausse ? '#0B6E4F' : '#C0392B'};">${hausse ? '+' : ''}${t.variation_pct}%</span></div>`;
+        }).join('') || '<p style="padding:14px; color:#999; font-size:13px;">Pas encore de cours du jour.</p>';
+
+        el.innerHTML = `
+          <div class="mise-en-page-actu">
+            <div>
+              <div class="bandeau-section">Actualités boursières</div>
+              <div class="grille-cartes-actu">${cartesHtml}</div>
+            </div>
+            <div>
+              <div class="bandeau-section">📌 Points de marché</div>
+              <div class="sidebar-marche">${pointsMarcheHtml}</div>
+            </div>
+          </div>
+        `;
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    }
+
+    async function afficherFinancieres() {
+      const el = document.getElementById('zone-actualites');
+      el.innerHTML = '<p style="color:#999;">Chargement...</p>';
+      try {
+        const { actualites } = await apiCall('/api/actualites/financieres');
+        const cartesHtml = actualites.length
+          ? actualites.map(a => carteActualite(a, '💹')).join('')
+          : '<p style="color:#999;">Aucune actualité financière publiée pour le moment.</p>';
+        el.innerHTML = `
+          <div class="bandeau-section">Actualités financières</div>
+          <div class="grille-cartes-actu">${cartesHtml}</div>
+        `;
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    }
+
+    document.getElementById('selecteur-type').addEventListener('change', (e) => {
+      e.target.value === 'financieres' ? afficherFinancieres() : afficherBoursieres();
+    });
+
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      await afficherBoursieres();
+    })();
+  </script>
+</body>
+</html>
