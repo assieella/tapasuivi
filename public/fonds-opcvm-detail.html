@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fonds OPCVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .stat-box { background:#F5F7FA; border-radius:8px; padding:14px 18px; text-align:center; flex:1; min-width:120px; }
+  .stat-box .valeur { font-size:20px; font-weight:700; color:var(--navy); }
+  .stat-box .valeur.positive { color:#0B6E4F; }
+  .stat-box .valeur.negative { color:#C0392B; }
+  .stat-box .libelle { font-size:12px; color:#777; margin-top:2px; }
+  .table-historique { width:100%; border-collapse:collapse; font-size:13px; }
+  .table-historique th { text-align:left; padding:8px 10px; background:var(--navy); color:white; }
+  .table-historique td { padding:8px 10px; border-bottom:1px solid var(--border); }
+  .table-historique .perf-positive { color:#0B6E4F; font-weight:600; }
+  .table-historique .perf-negative { color:#C0392B; font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/fonds-opcvm.html">← Tous les fonds</a></div>
+  <div class="container">
+    <div class="card" id="fiche-content"><p>Chargement...</p></div>
+    <div class="card" id="graphique-content" style="display:none;">
+      <h2>Évolution de la valeur liquidative</h2>
+      <div id="graphique-vl"></div>
+    </div>
+    <div class="card" id="historique-content"></div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const idFonds = new URLSearchParams(window.location.search).get('id');
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      if (!idFonds) { document.getElementById('fiche-content').innerHTML = '<p class="error">Aucun fonds spécifié.</p>'; return; }
+
+      try {
+        const { fonds, historique } = await apiCall(`/api/fonds-opcvm/${idFonds}`);
+        const dernier = historique[historique.length - 1];
+
+        const classePerf = (v) => v === null || v === undefined ? '' : (v >= 0 ? 'positive' : 'negative');
+        const afficherPerf = (v) => v === null || v === undefined ? '—' : `${v >= 0 ? '+' : ''}${v}%`;
+
+        document.getElementById('fiche-content').innerHTML = `
+          <h1>${fonds.nom}</h1>
+          <p style="color:#777;">${fonds.societe_gestion || ''} ${fonds.categorie ? `· <span class="badge badge-equilibre">${fonds.categorie}</span>` : ''}</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+            <div class="stat-box">
+              <div class="valeur">${dernier && dernier.valeur_liquidative ? Number(dernier.valeur_liquidative).toLocaleString('fr-FR') : '—'}</div>
+              <div class="libelle">VL actuelle (FCFA)</div>
+            </div>
+            <div class="stat-box">
+              <div class="valeur ${classePerf(dernier?.perf_ytd)}">${afficherPerf(dernier?.perf_ytd)}</div>
+              <div class="libelle">Depuis janvier</div>
+            </div>
+            <div class="stat-box">
+              <div class="valeur ${classePerf(dernier?.perf_1an)}">${afficherPerf(dernier?.perf_1an)}</div>
+              <div class="libelle">Sur 1 an</div>
+            </div>
+            <div class="stat-box">
+              <div class="valeur ${classePerf(dernier?.perf_3ans)}">${afficherPerf(dernier?.perf_3ans)}</div>
+              <div class="libelle">Sur 3 ans</div>
+            </div>
+          </div>
+        `;
+
+        // Graphique d'évolution de la VL — uniquement si on a au moins 2 points dans le temps.
+        const pointsAvecVL = historique.filter(h => h.valeur_liquidative !== null);
+        if (pointsAvecVL.length >= 2) {
+          const largeur = 700, hauteur = 260, marge = 40;
+          const valeurs = pointsAvecVL.map(p => Number(p.valeur_liquidative));
+          const minVal = Math.min(...valeurs);
+          const maxVal = Math.max(...valeurs);
+          const ecart = (maxVal - minVal) || 1;
+          const coordonnees = pointsAvecVL.map((p, i) => ({
+            x: marge + i * (largeur - 2 * marge) / (pointsAvecVL.length - 1 || 1),
+            y: hauteur - marge - ((Number(p.valeur_liquidative) - minVal) / ecart) * (hauteur - 2 * marge)
+          }));
+          const polyline = coordonnees.map(c => `${c.x},${c.y}`).join(' ');
+          const pasEtiquette = Math.max(1, Math.floor(pointsAvecVL.length / 6));
+
+          document.getElementById('graphique-content').style.display = 'block';
+          document.getElementById('graphique-vl').innerHTML = `
+            <svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto;">
+              <line x1="${marge}" y1="${hauteur - marge}" x2="${largeur - marge}" y2="${hauteur - marge}" stroke="#E1E5EC" />
+              <polyline points="${polyline}" fill="none" stroke="#DAAA37" stroke-width="2.5" />
+              ${coordonnees.map(c => `<circle cx="${c.x}" cy="${c.y}" r="3" fill="#0F2F59" />`).join('')}
+              ${coordonnees.map((c, i) => i % pasEtiquette === 0 ? `<text x="${c.x}" y="${hauteur - 8}" font-size="9" fill="#999" text-anchor="middle">${new Date(pointsAvecVL[i].date_vl).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</text>` : '').join('')}
+            </svg>
+            <p style="font-size:12px; color:#777; margin-top:6px;">Plus bas : <strong>${minVal.toLocaleString('fr-FR')} FCFA</strong> — Plus haut : <strong>${maxVal.toLocaleString('fr-FR')} FCFA</strong> (sur la période suivie)</p>
+          `;
+        }
+
+        // Tableau de l'historique complet, du plus récent au plus ancien.
+        const historiqueRecentDabord = [...historique].reverse();
+        document.getElementById('historique-content').innerHTML = historique.length ? `
+          <h2>Historique</h2>
+          <table class="table-historique">
+            <thead><tr><th>Date</th><th>VL (FCFA)</th><th>Depuis janvier</th><th>1 an</th><th>3 ans</th></tr></thead>
+            <tbody>
+              ${historiqueRecentDabord.map(h => `
+                <tr>
+                  <td>${new Date(h.date_vl).toLocaleDateString('fr-FR')}</td>
+                  <td>${h.valeur_liquidative ? Number(h.valeur_liquidative).toLocaleString('fr-FR') : '—'}</td>
+                  <td class="${classePerf(h.perf_ytd)}">${afficherPerf(h.perf_ytd)}</td>
+                  <td class="${classePerf(h.perf_1an)}">${afficherPerf(h.perf_1an)}</td>
+                  <td class="${classePerf(h.perf_3ans)}">${afficherPerf(h.perf_3ans)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<p style="color:#999;">Aucun historique enregistré pour ce fonds.</p>';
+
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        document.getElementById('fiche-content').innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

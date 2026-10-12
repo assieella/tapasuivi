@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistiques — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .grille-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 16px; }
+  .stat-box { background: #F5F7FA; border-radius: 10px; padding: 18px; text-align: center; }
+  .stat-box .chiffre { font-size: 30px; font-weight: 700; color: var(--navy); font-family: Georgia, serif; }
+  .stat-box .libelle { font-size: 13px; color: #777; margin-top: 4px; }
+  .stat-box.accent .chiffre { color: var(--gold); }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>📊 Statistiques d'acquisition</h1>
+      <p style="font-size:13px; color:#666;">Permet de vérifier que les canaux (Test TAPA, Découverte, Compte gratuit) amènent vraiment des clients.</p>
+      <div id="contenu-stats"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function chargerStats() {
+      const el = document.getElementById('contenu-stats');
+      try {
+        const { clients, prospects, conversions, taux_conversion_pct } = await apiCall('/api/admin/stats-acquisition');
+        el.innerHTML = `
+          <h2 style="font-size:16px; margin-top:20px;">Clients</h2>
+          <div class="grille-stats">
+            <div class="stat-box"><div class="chiffre">${clients.total}</div><div class="libelle">Clients payants (total)</div></div>
+            <div class="stat-box accent"><div class="chiffre">${clients.aujourd_hui}</div><div class="libelle">Nouveaux aujourd'hui</div></div>
+            <div class="stat-box"><div class="chiffre">${clients.ce_mois}</div><div class="libelle">Nouveaux ce mois-ci</div></div>
+          </div>
+
+          <h2 style="font-size:16px; margin-top:28px;">Prospects, par canal</h2>
+          <div class="grille-stats">
+            <div class="stat-box"><div class="chiffre">${prospects.total_uniques}</div><div class="libelle">Total prospects uniques</div></div>
+            <div class="stat-box"><div class="chiffre">${prospects.test_tapa}</div><div class="libelle">Test TAPA</div></div>
+            <div class="stat-box"><div class="chiffre">${prospects.decouverte}</div><div class="libelle">Découverte BRVM</div></div>
+            <div class="stat-box"><div class="chiffre">${prospects.comptes_gratuits}</div><div class="libelle">Comptes gratuits</div></div>
+          </div>
+
+          <h2 style="font-size:16px; margin-top:28px;">Conversion</h2>
+          <div class="grille-stats">
+            <div class="stat-box accent"><div class="chiffre">${conversions}</div><div class="libelle">Prospects devenus clients</div></div>
+            <div class="stat-box accent"><div class="chiffre">${taux_conversion_pct}%</div><div class="libelle">Taux de conversion</div></div>
+          </div>
+          <p style="font-size:12px; color:#999; margin-top:16px;">Un prospect est compté comme "converti" dès que son email, déjà présent dans une des sources prospects, correspond à un vrai compte client payant.</p>
+        `;
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      await chargerStats();
+    })();
+  </script>
+</body>
+</html>

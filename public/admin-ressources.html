@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des ressources — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office — Ressources</span></div><a href="/admin.html">← Clients</a></div>
+  <div class="container" style="max-width: 760px;">
+
+    <div class="card">
+      <h1>Ajouter un document</h1>
+      <p style="font-size:14px; color:#666;">Héberge d'abord le fichier ailleurs (Google Drive en partage public, par exemple), puis colle le lien ici.</p>
+      <label>Titre</label><input type="text" id="d-titre" placeholder="Ex: Formulaire d'ouverture de compte-titres">
+      <label>Organisme concerné (optionnel)</label><input type="text" id="d-organisme" placeholder="Ex: Coris Bourse">
+      <label>Description (optionnelle)</label><input type="text" id="d-description">
+      <label>Lien du document</label><input type="text" id="d-lien" placeholder="https://drive.google.com/...">
+      <button onclick="ajouterDocument()">Ajouter</button>
+      <div id="resultat-document"></div>
+    </div>
+    <div class="card">
+      <h2>Documents publiés</h2>
+      <div id="liste-documents"><p>Chargement...</p></div>
+    </div>
+
+    <div class="card">
+      <h1>Ajouter une SGI / SGO</h1>
+      <label>Nom</label><input type="text" id="s-nom" placeholder="Ex: Coris Bourse">
+      <label>Type</label>
+      <select id="s-type"><option value="SGI">SGI</option><option value="SGO">SGO</option></select>
+      <label>Pays</label><input type="text" id="s-pays" placeholder="Ex: Côte d'Ivoire">
+      <label>Investissement initial minimum</label><input type="text" id="s-min" placeholder="Ex: 50 000 FCFA">
+      <label>Téléphone</label><input type="text" id="s-tel">
+      <label>Email</label><input type="text" id="s-email">
+      <label>Site web</label><input type="text" id="s-site">
+      <label>Adresse</label><input type="text" id="s-adresse">
+      <label>Description (optionnelle)</label><input type="text" id="s-description">
+      <button onclick="ajouterSGI()">Ajouter</button>
+      <div id="resultat-sgi"></div>
+    </div>
+    <div class="card">
+      <h2>Annuaire SGI/SGO</h2>
+      <div id="liste-sgi"><p>Chargement...</p></div>
+    </div>
+
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function ajouterDocument() {
+      const el = document.getElementById('resultat-document');
+      try {
+        await apiCall('/api/admin/ressources', { method: 'POST', body: JSON.stringify({
+          titre: document.getElementById('d-titre').value,
+          organisme: document.getElementById('d-organisme').value,
+          description: document.getElementById('d-description').value,
+          lien_url: document.getElementById('d-lien').value
+        }) });
+        el.innerHTML = '<p class="success">Document ajouté.</p>';
+        ['d-titre','d-organisme','d-description','d-lien'].forEach(id => document.getElementById(id).value = '');
+        await chargerDocuments();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function supprimerDocument(id) { await apiCall(`/api/admin/ressources/${id}`, { method: 'DELETE' }); await chargerDocuments(); }
+    async function chargerDocuments() {
+      const { ressources } = await apiCall('/api/admin/ressources');
+      const el = document.getElementById('liste-documents');
+      el.innerHTML = ressources.length ? ressources.map(r => `
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+          <span>${r.titre} ${r.organisme ? `— ${r.organisme}` : ''}</span>
+          <button class="btn-secondary" style="margin:0; padding:4px 10px; font-size:12px;" onclick="supprimerDocument(${r.id})">Retirer</button>
+        </div>
+      `).join('') : '<p style="color:#999;">Aucun document.</p>';
+    }
+
+    async function ajouterSGI() {
+      const el = document.getElementById('resultat-sgi');
+      try {
+        await apiCall('/api/admin/annuaire-sgi', { method: 'POST', body: JSON.stringify({
+          nom: document.getElementById('s-nom').value, type: document.getElementById('s-type').value,
+          pays: document.getElementById('s-pays').value, investissement_initial_min: document.getElementById('s-min').value,
+          telephone: document.getElementById('s-tel').value, email: document.getElementById('s-email').value,
+          site_web: document.getElementById('s-site').value, adresse: document.getElementById('s-adresse').value,
+          description: document.getElementById('s-description').value
+        }) });
+        el.innerHTML = '<p class="success">Ajouté à l\'annuaire.</p>';
+        ['s-nom','s-pays','s-min','s-tel','s-email','s-site','s-adresse','s-description'].forEach(id => document.getElementById(id).value = '');
+        await chargerSGI();
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+    async function supprimerSGI(id) { await apiCall(`/api/admin/annuaire-sgi/${id}`, { method: 'DELETE' }); await chargerSGI(); }
+    async function chargerSGI() {
+      const { annuaire } = await apiCall('/api/admin/annuaire-sgi');
+      const el = document.getElementById('liste-sgi');
+      el.innerHTML = annuaire.length ? annuaire.map(s => `
+        <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+          <span>${s.nom} (${s.type}) ${s.pays ? `— ${s.pays}` : ''}</span>
+          <button class="btn-secondary" style="margin:0; padding:4px 10px; font-size:12px;" onclick="supprimerSGI(${s.id})">Retirer</button>
+        </div>
+      `).join('') : '<p style="color:#999;">Aucune entrée.</p>';
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
+      await chargerDocuments(); await chargerSGI();
+    })();
+  </script>
+</body>
+</html>

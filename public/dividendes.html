@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dividendes — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>💰 Dividendes versés</h1>
+      <p style="font-size:14px; color:#666;">Recherche un titre pour consulter son historique de dividendes.</p>
+      <label>Titre</label>
+      <input type="text" id="recherche-titre" list="liste-titres" placeholder="Tape un nom ou un code (ex: SNTS, Sonatel...)" autocomplete="off">
+      <datalist id="liste-titres"></datalist>
+      <div id="dividendes-content" style="margin-top:20px;"></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    let titresParLabel = {}; // "TICKER — Nom complet" → ticker
+
+    async function chargerListeTitres() {
+      const { titres } = await apiCall('/api/titres');
+      const elListe = document.getElementById('liste-titres');
+      elListe.innerHTML = titres.map(t => {
+        const label = `${t.ticker} — ${t.nom}`;
+        titresParLabel[label] = t.ticker;
+        return `<option value="${label}">`;
+      }).join('');
+    }
+
+    async function afficherDividendes(ticker) {
+      const el = document.getElementById('dividendes-content');
+      el.innerHTML = '<p style="color:#999;">Chargement...</p>';
+      try {
+        const { titre, dividendes } = await apiCall(`/api/titres/${ticker}`);
+        const dividendesRecentDabord = [...dividendes].reverse();
+        el.innerHTML = `
+          <h2>${titre.nom} <span style="color:#888; font-weight:400; font-size:15px;">(${ticker})</span></h2>
+          ${dividendes.length ? `
+            <table>
+              <thead><tr><th>Année</th><th>Montant par action</th></tr></thead>
+              <tbody>
+                ${dividendesRecentDabord.map(d => `
+                  <tr>
+                    <td>${d.annee}</td>
+                    <td>${Number(d.montant_par_action) === 0 ? '<span style="color:#C0392B;">Aucun dividende versé cette année</span>' : Number(d.montant_par_action).toLocaleString('fr-FR') + ' FCFA'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p style="color:#999;">Historique des dividendes non encore renseigné pour ce titre.</p>'}
+          <p style="margin-top:16px;"><a href="/titre.html?ticker=${ticker}">Voir la fiche complète de ce titre →</a></p>
+        `;
+      } catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+        el.innerHTML = `<p class="error">${e.message}</p>`;
+      }
+    }
+
+    document.getElementById('recherche-titre').addEventListener('input', (e) => {
+      const ticker = titresParLabel[e.target.value];
+      if (ticker) afficherDividendes(ticker); // ne déclenche que sur une sélection valide dans la liste
+    });
+
+    (async () => {
+      const user = await requireLogin(); if (!user) return;
+      try { await chargerListeTitres(); }
+      catch (e) {
+        if (e.acces_termine) { afficherAccesTermine(document.querySelector('.container')); return; }
+      }
+    })();
+  </script>
+</body>
+</html>
