@@ -73,6 +73,91 @@
       return svg;
     }
 
+
+    // Graphique de l'évolution du cours : axe des prix gradué en FCFA, dates en bas, plus bas / plus haut
+    // repérés, et survol (souris ou doigt) qui affiche la date, le prix et la variation du jour.
+    function dessinerGraphiqueCours(historique) {
+      const points = [...historique].reverse().map(p => ({ date: new Date(p.date_cours), cours: Number(p.cours) }));
+      const n = points.length;
+      const L = 720, H = 330, mg = 92, md = 24, mh = 30, mb = 40;
+      const fmt = v => Math.round(v).toLocaleString('fr-FR');
+      const fmtDate = (d, long) => d.toLocaleDateString('fr-FR', long ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+      const valeurs = points.map(p => p.cours);
+      const minVal = Math.min(...valeurs), maxVal = Math.max(...valeurs);
+
+      // Graduations « rondes » : pas de 1, 2 ou 5 fois une puissance de 10 (ex. 3 000, 3 500, 4 000 FCFA).
+      const etendue = (maxVal - minVal) || Math.max(1, maxVal * 0.1);
+      const pas0 = etendue / 5;
+      const puiss = Math.pow(10, Math.floor(Math.log10(pas0)));
+      const frac = pas0 / puiss;
+      const pasPrix = Math.max(1, (frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10) * puiss);
+      const bas = Math.floor(minVal / pasPrix) * pasPrix;
+      let haut = Math.ceil(maxVal / pasPrix) * pasPrix;
+      if (haut <= bas) haut = bas + pasPrix;
+      const graduations = [];
+      for (let v = bas; v <= haut + 1e-9; v += pasPrix) graduations.push(v);
+
+      const pas = (L - mg - md) / (n - 1);
+      const X = i => mg + i * pas;
+      const Y = v => H - mb - ((v - bas) / (haut - bas)) * (H - mb - mh);
+      const iMin = valeurs.indexOf(minVal), iMax = valeurs.indexOf(maxVal);
+      const ligne = points.map((p, i) => `${X(i)},${Y(p.cours)}`).join(' ');
+      const aire = `M ${X(0)},${H - mb} L ${ligne.replace(/ /g, ' L ')} L ${X(n - 1)},${H - mb} Z`;
+
+      // Environ 6 dates réparties sur l'axe, première et dernière comprises.
+      const nbDates = Math.min(n, 6);
+      const indicesDates = [...new Set(Array.from({ length: nbDates }, (_, k) => Math.round(k * (n - 1) / (nbDates - 1))))];
+
+      const etiquette = (i, texte, couleur) => {
+        const x = X(i), ancre = x < mg + 70 ? 'start' : (x > L - md - 70 ? 'end' : 'middle');
+        return `<text x="${x}" y="${Y(points[i].cours) - 11}" font-size="11.5" font-weight="700" fill="${couleur}" text-anchor="${ancre}">${texte}</text>`;
+      };
+
+      const svg = `
+        <svg id="svg-cours" viewBox="0 0 ${L} ${H}" style="width:100%; height:auto; touch-action:pan-y; cursor:crosshair;">
+          <defs><linearGradient id="degrade-cours" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F2F59" stop-opacity="0.18"/><stop offset="100%" stop-color="#0F2F59" stop-opacity="0.02"/></linearGradient></defs>
+          <text x="${mg - 10}" y="${mh - 14}" font-size="11" fill="#777" text-anchor="end" font-weight="600">Prix (FCFA)</text>
+          ${graduations.map(v => `<line x1="${mg}" y1="${Y(v)}" x2="${L - md}" y2="${Y(v)}" stroke="${v === bas ? '#B8C0CC' : '#E8ECF2'}" /><text x="${mg - 10}" y="${Y(v) + 4}" font-size="12" fill="#555" text-anchor="end">${fmt(v)}</text>`).join('')}
+          ${indicesDates.map(i => `<line x1="${X(i)}" y1="${H - mb}" x2="${X(i)}" y2="${H - mb + 5}" stroke="#B8C0CC" /><text x="${X(i)}" y="${H - mb + 20}" font-size="12" fill="#555" text-anchor="${i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle')}">${fmtDate(points[i].date)}</text>`).join('')}
+          <path d="${aire}" fill="url(#degrade-cours)" />
+          <polyline points="${ligne}" fill="none" stroke="#0F2F59" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+          <circle cx="${X(iMax)}" cy="${Y(maxVal)}" r="5" fill="#0B6E4F" stroke="#fff" stroke-width="2" />${etiquette(iMax, fmt(maxVal), '#0B6E4F')}
+          ${iMin !== iMax ? `<circle cx="${X(iMin)}" cy="${Y(minVal)}" r="5" fill="#C0392B" stroke="#fff" stroke-width="2" />${etiquette(iMin, fmt(minVal), '#C0392B')}` : ''}
+          <circle cx="${X(n - 1)}" cy="${Y(valeurs[n - 1])}" r="5.5" fill="#C9A227" stroke="#fff" stroke-width="2" />
+          <g id="survol-cours" style="display:none; pointer-events:none;">
+            <line id="survol-ligne" y1="${mh - 6}" y2="${H - mb}" stroke="#C9A227" stroke-width="1.5" stroke-dasharray="4 3" />
+            <circle id="survol-point" r="6" fill="#C9A227" stroke="#fff" stroke-width="2" />
+            <g id="survol-boite"><rect width="150" height="50" rx="8" fill="#0F2F59" /><text id="survol-prix" x="12" y="21" font-size="14" font-weight="700" fill="#fff"></text><text id="survol-date" x="12" y="39" font-size="11.5" fill="#DDE3EE"></text></g>
+          </g>
+        </svg>`;
+      document.getElementById('graphique-content').style.display = 'block';
+      const conteneur = document.getElementById('graphique-cours');
+      conteneur.innerHTML = svg + `<p style="font-size:12px; color:#777; margin-top:6px;">Du ${fmtDate(points[0].date, true)} au ${fmtDate(points[n - 1].date, true)} — Plus bas : <strong>${fmt(minVal)} FCFA</strong> — Plus haut : <strong>${fmt(maxVal)} FCFA</strong>. Passez la souris (ou le doigt) sur la courbe pour lire chaque prix.</p>`;
+
+      const el = conteneur.querySelector('#svg-cours');
+      const groupe = conteneur.querySelector('#survol-cours');
+      const montrer = clientX => {
+        const r = el.getBoundingClientRect();
+        const xSvg = (clientX - r.left) * L / r.width;
+        const i = Math.max(0, Math.min(n - 1, Math.round((xSvg - mg) / pas)));
+        const p = points[i], x = X(i), y = Y(p.cours);
+        const prec = i > 0 ? points[i - 1].cours : null;
+        const variation = prec ? ((p.cours - prec) / prec) * 100 : null;
+        groupe.style.display = 'block';
+        conteneur.querySelector('#survol-ligne').setAttribute('x1', x);
+        conteneur.querySelector('#survol-ligne').setAttribute('x2', x);
+        conteneur.querySelector('#survol-point').setAttribute('cx', x);
+        conteneur.querySelector('#survol-point').setAttribute('cy', y);
+        conteneur.querySelector('#survol-prix').textContent = `${fmt(p.cours)} FCFA` + (variation !== null ? `  ${variation >= 0 ? '+' : ''}${variation.toFixed(2).replace('.', ',')} %` : '');
+        conteneur.querySelector('#survol-date').textContent = fmtDate(p.date, true);
+        const bx = x > L / 2 ? x - 162 : x + 12;
+        conteneur.querySelector('#survol-boite').setAttribute('transform', `translate(${bx},${Math.max(mh, Math.min(y - 25, H - mb - 55))})`);
+      };
+      el.addEventListener('pointermove', e => montrer(e.clientX));
+      el.addEventListener('pointerdown', e => montrer(e.clientX));
+      el.addEventListener('pointerleave', () => { groupe.style.display = 'none'; });
+    }
+
     const params = new URLSearchParams(window.location.search);
     const ticker = params.get('ticker');
     (async () => {
@@ -185,35 +270,8 @@
         } else
         elEtudes.innerHTML = etudes.length ? `<h2>Études publiées par TAPA CONSEIL</h2>${etudes.map(rendreEtude).join('')}` : `<h2>Études publiées par TAPA CONSEIL</h2><p style="color:#999;">Aucune étude publiée pour ce titre pour le moment.</p>`;
 
-        // Petit graphique SVG fait maison : évolution du cours, du plus ancien au plus récent connu.
-        if (historique.length >= 2) {
-          const points = [...historique].reverse(); // du plus ancien au plus récent
-          const largeur = 680, hauteur = 200, marge = 30;
-          const valeurs = points.map(p => Number(p.cours));
-          const minVal = Math.min(...valeurs), maxVal = Math.max(...valeurs);
-          const ecart = maxVal - minVal || 1;
-          const pas = points.length > 1 ? (largeur - 2 * marge) / (points.length - 1) : 0;
-
-          const coordonnees = points.map((p, i) => {
-            const x = marge + i * pas;
-            const y = hauteur - marge - ((Number(p.cours) - minVal) / ecart) * (hauteur - 2 * marge);
-            return { x, y };
-          });
-          const polyline = coordonnees.map(c => `${c.x},${c.y}`).join(' ');
-
-          // Affiche environ 6 dates réparties sur l'axe, pas toutes (sinon illisible)
-          const pasEtiquette = Math.max(1, Math.floor(points.length / 6));
-
-          document.getElementById('graphique-content').style.display = 'block';
-          document.getElementById('graphique-cours').innerHTML = `
-            <svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto;">
-              <line x1="${marge}" y1="${hauteur - marge}" x2="${largeur - marge}" y2="${hauteur - marge}" stroke="#E1E5EC" />
-              <polyline points="${polyline}" fill="none" stroke="#0F2F59" stroke-width="2.5" />
-              ${coordonnees.map((c, i) => i % pasEtiquette === 0 ? `<text x="${c.x}" y="${hauteur - 8}" font-size="9" fill="#999" text-anchor="middle">${new Date(points[i].date_cours).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</text>` : '').join('')}
-            </svg>
-            <p style="font-size:12px; color:#777; margin-top:6px;">Plus bas : <strong>${minVal.toLocaleString('fr-FR')} FCFA</strong> — Plus haut : <strong>${maxVal.toLocaleString('fr-FR')} FCFA</strong> (sur la période suivie)</p>
-          `;
-        }
+        // Graphique du cours : prix (FCFA) à gauche, dates en bas, survol pour lire la date et le prix.
+        if (historique.length >= 2) dessinerGraphiqueCours(historique);
       } catch (e) { document.getElementById('fiche-content').innerHTML = `<p class="error">${e.message}</p>`; }
     })();
   </script>
