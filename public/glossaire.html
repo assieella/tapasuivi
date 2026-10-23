@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glossaire BRVM — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .glossaire-categorie { margin-bottom: 36px; }
+  .glossaire-categorie h2 { font-size: 20px; margin-bottom: 4px; }
+  .glossaire-terme { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .glossaire-terme:first-of-type { border-top: 1px solid var(--border); margin-top: 12px; }
+  .glossaire-terme dt { font-weight: 700; color: var(--navy); font-size: 15px; margin-bottom: 4px; }
+  .glossaire-terme dd { margin: 0; font-size: 14px; color: #444; line-height: 1.6; }
+  .glossaire-terme .exemple { font-size: 13px; color: #777; font-style: italic; margin-top: 4px; }
+  #recherche-glossaire { margin-bottom: 24px; }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>📖 Glossaire BRVM</h1>
+      <p style="font-size:14px; color:#666;">Les mots de la bourse, expliqués simplement — pas besoin d'être expert en finance pour vous y retrouver.</p>
+      <input type="text" id="recherche-glossaire" placeholder="Rechercher un terme (ex: dividende, SGI, PER...)">
+    </div>
+    <div class="card" id="contenu-glossaire"></div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    const GLOSSAIRE = [
+      { categorie: '📊 Les titres et instruments', termes: [
+        { mot: 'Action', def: "Une part de propriété d'une entreprise cotée en bourse. En achetant une action, vous devenez actionnaire, c'est-à-dire copropriétaire de l'entreprise à hauteur de vos titres.", exemple: "Ex: acheter 10 actions SNTS, c'est posséder une toute petite part de Sonatel." },
+        { mot: 'Obligation', def: "Un titre de dette : en l'achetant, vous prêtez de l'argent à une entreprise ou un État, qui s'engage à vous rembourser avec des intérêts à une date fixée." },
+        { mot: 'OPCVM / FCP', def: "Un fonds qui regroupe l'argent de plusieurs investisseurs pour l'investir collectivement, géré par des professionnels. Permet d'investir sans choisir soi-même chaque titre." },
+        { mot: 'BRVM Composite', def: "L'indice qui mesure la performance globale de toutes les sociétés cotées à la BRVM — un peu comme une moyenne du marché entier." },
+        { mot: 'BRVM 30', def: "Un indice qui suit uniquement les 30 valeurs les plus actives et représentatives du marché." }
+      ]},
+      { categorie: '🏦 Les acteurs du marché', termes: [
+        { mot: 'BRVM', def: "La Bourse Régionale des Valeurs Mobilières — le marché boursier commun aux 8 pays de l'UEMOA, basé à Abidjan." },
+        { mot: 'SGI', def: "Société de Gestion et d'Intermédiation — l'intermédiaire agréé obligatoire pour passer un ordre d'achat ou de vente réel à la BRVM. Vous ne pouvez pas investir directement sans en passer par une SGI." },
+        { mot: 'SGO', def: "Société de Gestion d'OPCVM — gère les fonds collectifs (OPCVM/FCP) pour le compte des investisseurs." },
+        { mot: 'AMF-UMOA', def: "L'Autorité des Marchés Financiers de l'UMOA — le régulateur qui supervise et encadre le marché financier régional." },
+        { mot: 'Dépositaire central', def: "L'organisme qui conserve électroniquement la trace de qui possède quelles actions — la \"mémoire officielle\" des titres détenus." }
+      ]},
+      { categorie: '💰 Analyse financière', termes: [
+        { mot: 'Dividende', def: "La part des bénéfices qu'une société choisit de reverser à ses actionnaires, généralement une fois par an." },
+        { mot: 'PER', def: "Price Earning Ratio — le cours de l'action divisé par le bénéfice par action. Il donne une idée du prix payé par rapport aux bénéfices générés." },
+        { mot: 'Capitalisation boursière', def: "La valeur totale d'une société en bourse : son cours de l'action multiplié par le nombre total d'actions existantes." },
+        { mot: 'Bénéfice net', def: "Ce qui reste à une société une fois toutes ses charges payées — son vrai profit sur une période donnée." },
+        { mot: 'Chiffre d\'affaires', def: "Le total des ventes réalisées par une entreprise sur une période, avant de retirer les charges." },
+        { mot: 'ROE', def: "Return on Equity — la rentabilité d'une société par rapport à ses capitaux propres. Plus il est élevé, plus l'entreprise génère du profit avec l'argent de ses actionnaires." }
+      ]},
+      { categorie: '🔄 Ordres et transactions', termes: [
+        { mot: 'Ordre au marché', def: "Un ordre d'achat ou de vente exécuté immédiatement, au cours actuel connu — sans condition de prix." },
+        { mot: 'Ordre à cours limité', def: "Un ordre qui ne s'exécute que si le cours atteint (ou dépasse, pour une vente) le prix que vous avez fixé à l'avance." },
+        { mot: 'Cours', def: "Le prix actuel auquel une action s'échange sur le marché." },
+        { mot: 'Volume', def: "Le nombre de titres échangés sur une période donnée — un indicateur de l'activité autour d'un titre." },
+        { mot: 'Achat / Vente', def: "Les deux sens possibles d'un ordre en bourse — acquérir des titres, ou céder ceux que l'on détient déjà." }
+      ]},
+      { categorie: '📈 Résultats et performance', termes: [
+        { mot: 'Plus-value', def: "Le gain réalisé quand on revend un titre à un prix supérieur à celui payé à l'achat." },
+        { mot: 'Moins-value', def: "La perte constatée quand on revend un titre à un prix inférieur à celui payé à l'achat." },
+        { mot: 'Rendement', def: "Le gain généré par un placement, exprimé en pourcentage — combine souvent l'évolution du cours et les dividendes perçus." },
+        { mot: 'Variation', def: "L'évolution du cours d'un titre sur une période donnée, exprimée en pourcentage (à la hausse ou à la baisse)." }
+      ]}
+    ];
+
+    function afficherGlossaire(filtre = '') {
+      const el = document.getElementById('contenu-glossaire');
+      const filtreNormalise = filtre.trim().toLowerCase();
+      let html = '';
+      GLOSSAIRE.forEach(cat => {
+        const termesFiltres = cat.termes.filter(t =>
+          !filtreNormalise || t.mot.toLowerCase().includes(filtreNormalise) || t.def.toLowerCase().includes(filtreNormalise)
+        );
+        if (!termesFiltres.length) return;
+        html += `<div class="glossaire-categorie"><h2>${cat.categorie}</h2><dl>`;
+        termesFiltres.forEach(t => {
+          html += `<div class="glossaire-terme"><dt>${t.mot}</dt><dd>${t.def}${t.exemple ? `<div class="exemple">${t.exemple}</div>` : ''}</dd></div>`;
+        });
+        html += `</dl></div>`;
+      });
+      el.innerHTML = html || '<p style="color:#999;">Aucun terme trouvé pour cette recherche.</p>';
+    }
+
+    document.getElementById('recherche-glossaire').addEventListener('input', (e) => afficherGlossaire(e.target.value));
+    afficherGlossaire();
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réservations présentiel — TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
+  <div class="container">
+    <div class="card">
+      <h1>🏫 Réservations — Formation en présentiel</h1>
+      <p style="font-size:13px; color:#666;">Personnes ayant réservé leur place depuis le site (février 2027, chaque fin de mois).</p>
+      <div id="liste-reservations"><p>Chargement...</p></div>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script>
+    async function chargerReservations() {
+      const el = document.getElementById('liste-reservations');
+      const { reservations } = await apiCall('/api/admin/reservations-presentiel');
+      if (!reservations.length) { el.innerHTML = '<p style="color:#999;">Aucune réservation pour le moment.</p>'; return; }
+      el.innerHTML = reservations.map(r => `
+        <div class="titre-row">
+          <span class="titre-nom">
+            <strong>${r.prenom} ${r.nom}</strong> — <a href="https://wa.me/${r.whatsapp.replace(/\D/g, '')}" target="_blank">${r.whatsapp}</a>
+            <br><span style="font-size:12px; color:#888;">${new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </span>
+          ${r.contactee
+            ? '<span style="color:#0B6E4F; font-size:13px;">✅ Contactée</span>'
+            : `<button onclick="marquerContactee(${r.id})" style="width:auto; padding:4px 12px; font-size:13px;">Marquer comme contactée</button>`}
+        </div>
+      `).join('');
+    }
+
+    async function marquerContactee(id) {
+      await apiCall(`/api/admin/reservations-presentiel/${id}/contactee`, { method: 'POST' });
+      await chargerReservations();
+    }
+
+    (async () => {
+      const user = await requireAdminLogin(); if (!user) return;
+      await chargerReservations();
+    })();
+  </script>
+</body>
+</html>
