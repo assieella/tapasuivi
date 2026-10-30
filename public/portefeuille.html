@@ -5,6 +5,7 @@
 <title>Mon portefeuille — TAPA CONSEIL</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/css/style.css">
+  <style>@media print { body * { visibility: hidden; } .zone-impression, .zone-impression * { visibility: visible; } .zone-impression { position: absolute; left: 0; top: 0; width: 100%; } }</style>
 </head>
 <body>
   <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"></div><a href="/dashboard.html">← Mon espace</a></div>
@@ -12,7 +13,14 @@
 
     <div class="card" id="resume-content"><h1>Mon portefeuille</h1><p>Chargement...</p></div>
 
-    <div class="card">
+        <div class="card" id="diagnostic-card">
+      <h2>Mon diagnostic</h2>
+      <p style="color:#666; font-size:14px;">Une lecture claire de votre portefeuille : performance, poids de chaque titre, secteurs et origine des pertes ou gains.</p>
+      <button id="btn-diagnostic" onclick="chargerDiagnostic()">Voir mon diagnostic</button>
+      <div id="diagnostic-content" style="margin-top:16px;"></div>
+    </div>
+
+<div class="card">
       <h2>Évolution</h2>
       <div id="graphique-evolution"><p style="color:#999;">Chargement du graphique...</p></div>
       <p style="font-size:13px; color:#666; margin-top:8px;"><span style="color:var(--navy); font-weight:700;">━</span> Valeur du portefeuille &nbsp; <span style="color:var(--gold); font-weight:700;">━</span> Montant versé</p>
@@ -220,6 +228,65 @@
           <div>${a.contenu}</div>
         </div>
       `).join('');
+    }
+
+
+    // Diagnostic : chiffres calculés sur le serveur, constats neutres (aucun avis d'achat ou de vente).
+    async function chargerDiagnostic() {
+      const zone = document.getElementById('diagnostic-content');
+      const bouton = document.getElementById('btn-diagnostic');
+      bouton.disabled = true; zone.innerHTML = '<p>Calcul en cours...</p>';
+      try {
+        const { diagnostic: d } = await apiCall('/api/portefeuille/diagnostic');
+        bouton.disabled = false; bouton.textContent = 'Actualiser mon diagnostic';
+        if (d.vide) { zone.innerHTML = '<p style="color:#999;">Enregistrez d\'abord au moins un achat pour obtenir votre diagnostic.</p>'; return; }
+        const couleur = v => v >= 0 ? '#0B6E4F' : '#C0392B';
+        const signe = v => v >= 0 ? '+' : '';
+        const pc = v => String(v).replace('.', ',') + ' %';
+        const r = d.resume;
+        const kpi = (titre, valeur, couleurTexte) => `<div style="flex:1 1 150px; background:#F6F8FB; border-radius:10px; padding:12px 14px;"><div style="font-size:12px; color:#777;">${titre}</div><div style="font-size:19px; font-weight:700; color:${couleurTexte || '#0F2F59'};">${valeur}</div></div>`;
+        zone.innerHTML = `
+          <div class="zone-impression">
+          <p style="font-size:12px; color:#777;">Cours du ${d.date_cours ? new Date(d.date_cours).toLocaleDateString('fr-FR') : '—'}. Hors dividendes et frais de courtage.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; margin:10px 0 14px;">
+            ${kpi('Capital investi', formatFCFA(r.capital_investi))}
+            ${kpi('Valeur actuelle', formatFCFA(r.valeur_actuelle))}
+            ${kpi(r.gain >= 0 ? 'Plus-value latente' : 'Moins-value latente', signe(r.gain) + formatFCFA(r.gain), couleur(r.gain))}
+            ${kpi('Rendement', signe(r.rendement_pct) + pc(r.rendement_pct), couleur(r.rendement_pct))}
+          </div>
+          ${d.interpretation.map(t => `<p>${t}</p>`).join('')}
+
+          <h3 style="margin-top:18px;">Détail par titre</h3>
+          <table>
+            <thead><tr><th>Titre</th><th>Coût d'achat</th><th>Valeur actuelle</th><th>Gain / perte</th><th>Rendement</th><th>Poids</th></tr></thead>
+            <tbody>${d.lignes.map(l => `<tr>
+              <td><a href="titre.html?ticker=${l.ticker}">${l.ticker}</a></td>
+              <td>${formatFCFA(l.cout)}</td>
+              <td>${l.valeur !== null ? formatFCFA(l.valeur) : '—'}</td>
+              <td style="color:${l.gain !== null ? couleur(l.gain) : '#999'}">${l.gain !== null ? signe(l.gain) + formatFCFA(l.gain) : '—'}</td>
+              <td style="color:${l.rendement_pct !== null ? couleur(l.rendement_pct) : '#999'}">${l.rendement_pct !== null ? signe(l.rendement_pct) + pc(l.rendement_pct) : '—'}</td>
+              <td>${l.poids_pct !== undefined ? pc(l.poids_pct) : '—'}</td></tr>`).join('')}</tbody>
+          </table>
+
+          <h3 style="margin-top:18px;">Répartition du portefeuille</h3>
+          ${d.lignes.filter(l => l.poids_pct !== undefined).map(l => `<div style="display:flex; align-items:center; gap:8px; margin:5px 0; font-size:13px;"><span style="width:52px; font-weight:600;">${l.ticker}</span><div style="flex:1; background:#EEF1F6; border-radius:6px; height:14px;"><div style="width:${Math.min(100, l.poids_pct)}%; background:#0F2F59; height:14px; border-radius:6px;"></div></div><span style="width:62px; text-align:right;">${pc(l.poids_pct)}</span></div>`).join('')}
+          ${d.secteurs.length ? `<p style="font-size:13px; color:#555; margin-top:10px;"><strong>Par secteur :</strong> ${d.secteurs.map(s => `${s.secteur} ${pc(s.poids_pct)}`).join(' · ')}</p>` : ''}
+
+          ${d.contribution_pertes.length ? `<h3 style="margin-top:18px;">D'où viennent les pertes ?</h3>
+            ${d.contribution_pertes.map(c => `<div style="display:flex; align-items:center; gap:8px; margin:5px 0; font-size:13px;"><span style="width:52px; font-weight:600;">${c.ticker}</span><div style="flex:1; background:#EEF1F6; border-radius:6px; height:14px;"><div style="width:${Math.min(100, c.part_pct)}%; background:#C0392B; height:14px; border-radius:6px;"></div></div><span style="width:140px; text-align:right;">${formatFCFA(c.perte)} (${pc(c.part_pct)})</span></div>`).join('')}` : ''}
+
+          ${d.constats.length ? `<h3 style="margin-top:18px;">Points d'attention</h3>
+            ${d.constats.map(c => `<div style="border-left:4px solid #DAAA37; background:#FFFBEF; padding:10px 14px; margin:8px 0; border-radius:0 8px 8px 0;"><p style="margin:0;">${c.texte}</p>${c.question ? `<p style="margin:6px 0 0; font-size:13px; color:#666;"><em>À vous de vous demander : ${c.question}</em></p>` : ''}</div>`).join('')}` : ''}
+
+          <p style="font-size:12px; color:#777; margin-top:16px; border-top:1px solid #E1E5EC; padding-top:10px;">${r.gain < 0 ? 'Une moins-value latente n\'est pas une perte réalisée : elle ne le devient que lors de la vente. ' : ''}Ce diagnostic est un outil d'information et d'éducation fondé sur vos transactions et sur le dernier cours connu. Il ne constitue ni un conseil en investissement, ni une recommandation d'achat ou de vente.</p>
+          </div>
+          <button class="btn-secondary" style="margin-top:8px;" onclick="window.print()">Imprimer / enregistrer en PDF</button>`;
+      } catch (e) {
+        bouton.disabled = false;
+        zone.innerHTML = e.compte_gratuit
+          ? '<p style="background:#F6F8FB; padding:12px 14px; border-radius:10px;">🔒 Le diagnostic de portefeuille fait partie de l\'accompagnement BRVM Starter. Passez à une formule payante pour en profiter.</p>'
+          : `<p class="error">${e.message || 'Une erreur est survenue.'}</p>`;
+      }
     }
 
     // Petit graphique SVG fait maison (pas de dépendance externe) : deux courbes,

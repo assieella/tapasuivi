@@ -1,7 +1,8 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { requireProgrammeActif } = require('../middleware/programmeActif');
+const { requireProgrammeActif, requireCompteNonGratuit } = require('../middleware/programmeActif');
+const { calculerDiagnostic } = require('../services/diagnosticPortefeuille');
 const { calculerPositions, calculerMontantNetInvesti } = require('../services/portefeuille');
 
 const router = express.Router();
@@ -196,6 +197,21 @@ router.get('/evolution', requireAuth, requireProgrammeActif, async (req, res) =>
   }
 
   res.json({ evolution: points });
+});
+
+// Diagnostic automatique du portefeuille — réservé aux comptes payants (chiffres + constats neutres, jamais d'avis d'achat ou de vente)
+router.get('/diagnostic', requireAuth, requireProgrammeActif, requireCompteNonGratuit, async (req, res) => {
+  try {
+    const transactions = await pool.query('SELECT * FROM portefeuille_transactions WHERE user_id = $1 ORDER BY date_transaction ASC, id ASC', [req.user.id]);
+    const cours = await pool.query('SELECT DISTINCT ON (ticker) ticker, cours, date_cours FROM cours_quotidiens ORDER BY ticker, date_cours DESC');
+    const titres = await pool.query('SELECT ticker, nom, secteur FROM titres_brvm');
+    const coursParTicker = Object.fromEntries(cours.rows.map(r => [r.ticker, r]));
+    const infos = Object.fromEntries(titres.rows.map(r => [r.ticker, { nom: r.nom, secteur: r.secteur }]));
+    res.json({ diagnostic: calculerDiagnostic(transactions.rows, coursParTicker, infos) });
+  } catch (e) {
+    console.error('Diagnostic portefeuille:', e.message);
+    res.status(500).json({ error: 'Impossible de calculer le diagnostic pour le moment.' });
+  }
 });
 
 // Analyses mensuelles déjà validées et envoyées (le client ne voit jamais un brouillon)

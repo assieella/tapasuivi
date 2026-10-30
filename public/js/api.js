@@ -11,6 +11,7 @@ async function apiCall(url, options = {}) {
     }
     const err = new Error(data.error || 'Une erreur est survenue.');
     err.acces_termine = data.acces_termine === true;
+    err.compte_gratuit = data.compte_gratuit === true;
     err.email_non_confirme = data.email_non_confirme === true;
     err.alerte_concentration = data.alerte_concentration === true;
     err.alerte_prix = data.alerte_prix === true;
