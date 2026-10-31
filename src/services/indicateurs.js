@@ -40,7 +40,10 @@ function calculerIndicateurs(lignes, max = 120) {
   const cours = lignes.map(l => Number(l.cours));
   const mm20 = moyenneMobile(cours, 20), mm50 = moyenneMobile(cours, 50), r = rsi(cours, 14);
   const points = lignes.map((l, i) => ({
-    date: new Date(l.date_cours).toISOString().slice(0, 10), cours: cours[i], mm20: mm20[i], mm50: mm50[i], rsi: r[i]
+    date: new Date(l.date_cours).toISOString().slice(0, 10), cours: cours[i],
+    ouverture: l.ouverture !== undefined && l.ouverture !== null ? Number(l.ouverture) : null,
+    volume: l.volume !== undefined && l.volume !== null ? Number(l.volume) : null,
+    mm20: mm20[i], mm50: mm50[i], rsi: r[i]
   }));
   return { nb_cours: lignes.length, points: points.slice(-max) };
 }

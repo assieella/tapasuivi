@@ -508,3 +508,6 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS type_message TEXT NOT NULL DEFAULT
 -- encombre la conversation), sans jamais le retirer de l'espace du client — qui continue de
 -- le voir normalement dans sa propre messagerie.
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS masque_admin BOOLEAN NOT NULL DEFAULT false;
+
+-- Cours d'ouverture du jour (publié par la BRVM) : permet d'afficher des bougies ouverture → clôture
+ALTER TABLE cours_quotidiens ADD COLUMN IF NOT EXISTS ouverture NUMERIC;

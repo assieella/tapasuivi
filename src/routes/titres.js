@@ -100,7 +100,7 @@ router.get('/:ticker', requireAuth, requireProgrammeActif, async (req, res) => {
   // Un compte gratuit ne reçoit jamais ces données — seulement l'indication qu'elles existent.
   let indicateurs = null;
   if (peutVoirEtudes) {
-    const tous = await pool.query('SELECT date_cours, cours FROM cours_quotidiens WHERE ticker = $1 ORDER BY date_cours ASC', [ticker]);
+    const tous = await pool.query('SELECT date_cours, cours, ouverture, volume FROM cours_quotidiens WHERE ticker = $1 ORDER BY date_cours ASC', [ticker]);
     indicateurs = calculerIndicateurs(tous.rows);
   }
   const nombreEtudes = (await pool.query('SELECT COUNT(*)::int AS n FROM etudes_titres WHERE ticker = $1', [ticker])).rows[0].n;

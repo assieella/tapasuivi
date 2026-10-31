@@ -59,6 +59,7 @@ function parseColleBRVM(texteColle) {
         cours: nettoyerNombre(mDetaille[6]), // cours de clôture (4e nombre)
         variation_pct: nettoyerNombre(mDetaille[7]),
         volume: nettoyerNombre(mDetaille[3]), // 1er nombre après le nom
+        ouverture: nettoyerNombre(mDetaille[5]), // 3e nombre : cours d'ouverture
         nom: nomBrut,
         pays: deduirePays(nomBrut)
       });
@@ -72,6 +73,7 @@ function parseColleBRVM(texteColle) {
         cours: nettoyerNombre(mSimple[2]),
         variation_pct: nettoyerNombre(mSimple[3]),
         volume: null,
+        ouverture: null,
         nom: null,
         pays: null
       });

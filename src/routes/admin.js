@@ -204,8 +204,8 @@ router.post('/cours/coller', requireAdminAuth, async (req, res) => {
     if (!titreExistant.rows.length) { ignores.push(r.ticker); continue; }
 
     await pool.query(
-      `INSERT INTO cours_quotidiens (ticker, date_cours, cours, variation_pct, volume) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (ticker, date_cours) DO UPDATE SET cours = $3, variation_pct = $4, volume = $5`,
-      [r.ticker, date, r.cours, r.variation_pct, r.volume || null]
+      `INSERT INTO cours_quotidiens (ticker, date_cours, cours, variation_pct, volume, ouverture) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (ticker, date_cours) DO UPDATE SET cours = $3, variation_pct = $4, volume = $5, ouverture = COALESCE($6, cours_quotidiens.ouverture)`,
+      [r.ticker, date, r.cours, r.variation_pct, r.volume || null, (r.ouverture && r.ouverture > 0) ? r.ouverture : null]
     );
     inseres++;
 

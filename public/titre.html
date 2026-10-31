@@ -79,16 +79,32 @@
     function dessinerGraphiqueCours(historique, indic, reserve) {
       const avecIndic = !!(indic && indic.points && indic.points.length >= 2);
       const points = avecIndic
-        ? indic.points.map(p => ({ date: new Date(p.date), cours: Number(p.cours), mm20: p.mm20, mm50: p.mm50, rsi: p.rsi }))
+        ? indic.points.map(p => ({ date: new Date(p.date), cours: Number(p.cours), ouverture: p.ouverture, mm20: p.mm20, mm50: p.mm50, rsi: p.rsi }))
         : [...historique].reverse().map(p => ({ date: new Date(p.date_cours), cours: Number(p.cours) }));
       const n = points.length;
       const nbCours = avecIndic ? indic.nb_cours : n;
-      const etat = { mm20: true, mm50: true, rsi: true };
+      const etat = { mm20: true, mm50: true, rsi: true, bougies: false };
+      const SEUIL_BOUGIES = 5;
+      const nbOuvertures = points.filter(p => p.ouverture !== null && p.ouverture !== undefined && p.ouverture > 0).length;
+      const dispoBougies = avecIndic && nbOuvertures >= SEUIL_BOUGIES;
       const fmt = v => Math.round(v).toLocaleString('fr-FR');
       const fmtDate = (d, long) => d.toLocaleDateString('fr-FR', long ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
       const dispoMM20 = avecIndic && points.some(p => p.mm20 !== null);
       const dispoMM50 = avecIndic && points.some(p => p.mm50 !== null);
       const dispoRSI = avecIndic && points.some(p => p.rsi !== null);
+
+      // Bougies « ouverture → clôture » : verte si le cours a monté dans la journée, rouge s'il a baissé, grise s'il
+      // est inchangé. La BRVM ne publie pas le plus haut ni le plus bas : il n'y a donc pas de mèches.
+      function bougiesSvg(X, Y, pas) {
+        const largeur = Math.max(3, Math.min(22, pas * 0.62));
+        return points.map((p, i) => {
+          if (!(p.ouverture > 0)) return `<circle cx="${X(i)}" cy="${Y(p.cours)}" r="2" fill="#B8C0CC" />`;
+          const haut = Math.max(p.ouverture, p.cours), bas = Math.min(p.ouverture, p.cours);
+          const couleur = p.cours > p.ouverture ? '#0B6E4F' : (p.cours < p.ouverture ? '#C0392B' : '#7A8699');
+          const yh = Y(haut), yb = Y(bas);
+          return `<rect x="${X(i) - largeur / 2}" y="${yh}" width="${largeur}" height="${Math.max(2, yb - yh)}" fill="${couleur}" rx="1.5" />`;
+        }).join('');
+      }
 
       function rendre() {
         const L = 720, mg = 92, md = 24, mh = 30, mb = 40, hPrix = 330;
@@ -99,6 +115,8 @@
         const extra = [];
         if (etat.mm20) points.forEach(p => { if (p.mm20 !== null && p.mm20 !== undefined) extra.push(p.mm20); });
         if (etat.mm50) points.forEach(p => { if (p.mm50 !== null && p.mm50 !== undefined) extra.push(p.mm50); });
+        const modeBougies = dispoBougies && etat.bougies;
+        if (modeBougies) points.forEach(p => { if (p.ouverture > 0) extra.push(p.ouverture); });
         const minVal = Math.min(...valeurs, ...extra), maxVal = Math.max(...valeurs, ...extra);
 
         // Graduations « rondes » : pas de 1, 2 ou 5 fois une puissance de 10 (ex. 3 000, 3 500, 4 000 FCFA).
@@ -147,8 +165,8 @@
             <text x="${mg - 10}" y="${mh - 14}" font-size="11" fill="#777" text-anchor="end" font-weight="600">Prix (FCFA)</text>
             ${graduations.map(v => `<line x1="${mg}" y1="${Y(v)}" x2="${L - md}" y2="${Y(v)}" stroke="${v === bas ? '#B8C0CC' : '#E8ECF2'}" /><text x="${mg - 10}" y="${Y(v) + 4}" font-size="12" fill="#555" text-anchor="end">${fmt(v)}</text>`).join('')}
             ${indicesDates.map(i => `<line x1="${X(i)}" y1="${hPrix - mb}" x2="${X(i)}" y2="${hPrix - mb + 5}" stroke="#B8C0CC" /><text x="${X(i)}" y="${hPrix - mb + 20}" font-size="12" fill="#555" text-anchor="${i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle')}">${fmtDate(points[i].date)}</text>`).join('')}
-            <path d="${aire}" fill="url(#degrade-cours)" />
-            <polyline points="${ligne}" fill="none" stroke="#0F2F59" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+            ${modeBougies ? bougiesSvg(X, Y, pas) : `<path d="${aire}" fill="url(#degrade-cours)" />
+            <polyline points="${ligne}" fill="none" stroke="#0F2F59" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />`}
             ${etat.mm20 ? trace('mm20', '#C9A227', false) : ''}${etat.mm50 ? trace('mm50', '#0B8A8A', true) : ''}
             <circle cx="${X(iMax)}" cy="${Y(points[iMax].cours)}" r="5" fill="#0B6E4F" stroke="#fff" stroke-width="2" />${etiquette(iMax, fmt(points[iMax].cours), '#0B6E4F')}
             ${iMin !== iMax ? `<circle cx="${X(iMin)}" cy="${Y(points[iMin].cours)}" r="5" fill="#C0392B" stroke="#fff" stroke-width="2" />${etiquette(iMin, fmt(points[iMin].cours), '#C0392B')}` : ''}
@@ -164,15 +182,18 @@
         let controles = '';
         if (avecIndic) {
           const case_ = (cle, texte, couleur, dispo) => `<label style="display:inline-flex; align-items:center; gap:6px; margin-right:16px; font-size:13px; font-weight:400; ${dispo ? '' : 'opacity:.5;'}"><input type="checkbox" style="width:auto;" ${etat[cle] && dispo ? 'checked' : ''} ${dispo ? '' : 'disabled'} onchange="window.__basculerIndic('${cle}', this.checked)"><span style="display:inline-block; width:18px; height:3px; background:${couleur}; border-radius:2px;"></span>${texte}</label>`;
-          controles = `<div style="margin-bottom:10px;">${case_('mm20', 'MM20', '#C9A227', dispoMM20)}${case_('mm50', 'MM50', '#0B8A8A', dispoMM50)}${case_('rsi', 'RSI (14)', '#7B3FA0', dispoRSI)}</div>`;
+          const modeRadio = (valeur, texte, dispo) => `<label style="display:inline-flex; align-items:center; gap:6px; margin-right:16px; font-size:13px; font-weight:400; ${dispo ? '' : 'opacity:.5;'}"><input type="radio" name="mode-graph" style="width:auto;" ${(etat.bougies && dispoBougies) === (valeur === 'bougies') ? 'checked' : ''} ${dispo ? '' : 'disabled'} onchange="window.__basculerIndic('bougies', ${valeur === 'bougies'})">${texte}</label>`;
+          controles = `<div style="margin-bottom:6px;">${modeRadio('courbe', 'Courbe', true)}${modeRadio('bougies', 'Bougies', dispoBougies)}</div><div style="margin-bottom:10px;">${case_('mm20', 'MM20', '#C9A227', dispoMM20)}${case_('mm50', 'MM50', '#0B8A8A', dispoMM50)}${case_('rsi', 'RSI (14)', '#7B3FA0', dispoRSI)}</div>`;
         }
         let notes = '';
         if (avecIndic) {
           const manque = [];
           if (!dispoMM20) manque.push(`MM20 : disponible après 20 cours enregistrés (${nbCours}/20)`);
           if (!dispoMM50) manque.push(`MM50 : disponible après 50 cours enregistrés (${nbCours}/50)`);
+          if (!dispoBougies) manque.push(`Bougies : disponibles après ${SEUIL_BOUGIES} jours avec cours d'ouverture enregistré (${nbOuvertures}/${SEUIL_BOUGIES})`);
           if (!dispoRSI) manque.push(`RSI : disponible après 15 cours enregistrés (${nbCours}/15)`);
           if (manque.length) notes += `<p style="font-size:12px; color:#777; margin-top:6px;">⏳ ${manque.join(' · ')}.</p>`;
+          if (modeBougies) notes += `<p style="font-size:12px; color:#777; margin-top:6px;"><strong>Bougies</strong> : chaque bougie va du cours d'ouverture au cours de clôture de la journée (verte = hausse, rouge = baisse). La BRVM ne publie pas le plus haut ni le plus bas du jour, il n'y a donc pas de mèches.</p>`;
           notes += `<p style="font-size:12px; color:#777; margin-top:6px;"><strong>MM20 / MM50</strong> : moyenne des 20 / 50 derniers cours, qui lisse les variations pour montrer la tendance. <strong>RSI</strong> : mesure de 0 à 100 la vigueur des variations récentes ; on parle souvent de zone « haute » au-dessus de 70 et de zone « basse » en dessous de 30. Ce sont des repères de lecture, pas des signaux d'achat ou de vente. Calculs sur les cours de clôture enregistrés.</p>`;
         } else if (reserve) {
           notes += `<p style="font-size:12px; color:#555; margin-top:8px; background:#F6F8FB; padding:8px 12px; border-radius:8px;">🔒 Moyennes mobiles (MM20, MM50) et RSI : réservés aux clients de l'accompagnement BRVM Starter.</p>`;
@@ -196,6 +217,7 @@
           conteneur.querySelector('#survol-ligne').setAttribute('x2', x);
           conteneur.querySelector('#survol-point').setAttribute('cx', x);
           conteneur.querySelector('#survol-point').setAttribute('cy', y);
+          const ouv = (modeBougies && p.ouverture > 0) ? ` (ouv. ${fmt(p.ouverture)})` : '';
           const lignes = [`${fmt(p.cours)} FCFA` + (variation !== null ? `  ${variation >= 0 ? '+' : ''}${variation.toFixed(2).replace('.', ',')} %` : ''), fmtDate(p.date, true)];
           const supp = [];
           if (etat.mm20 && p.mm20 !== null && p.mm20 !== undefined) supp.push(`MM20 : ${fmt(p.mm20)}`);
@@ -204,7 +226,7 @@
           const hb = 50 + (supp.length ? 6 + supp.length * 16 : 0);
           const bx = x > L / 2 ? x - 192 : x + 12;
           const by = Math.max(mh, Math.min(y - 25, hPrix - mb - hb - 5));
-          conteneur.querySelector('#survol-boite').innerHTML = `<g transform="translate(${bx},${by})"><rect width="180" height="${hb}" rx="8" fill="#0F2F59" /><text x="12" y="21" font-size="13.5" font-weight="700" fill="#fff">${lignes[0]}</text><text x="12" y="39" font-size="11.5" fill="#DDE3EE">${lignes[1]}</text>${supp.map((t, k) => `<text x="12" y="${58 + k * 16}" font-size="11.5" fill="#F2D675">${t}</text>`).join('')}</g>`;
+          conteneur.querySelector('#survol-boite').innerHTML = `<g transform="translate(${bx},${by})"><rect width="180" height="${hb}" rx="8" fill="#0F2F59" /><text x="12" y="21" font-size="13.5" font-weight="700" fill="#fff">${lignes[0]}</text><text x="12" y="39" font-size="11.5" fill="#DDE3EE">${lignes[1]}${ouv}</text>${supp.map((t, k) => `<text x="12" y="${58 + k * 16}" font-size="11.5" fill="#F2D675">${t}</text>`).join('')}</g>`;
         };
         el.addEventListener('pointermove', e => montrer(e.clientX));
         el.addEventListener('pointerdown', e => montrer(e.clientX));
