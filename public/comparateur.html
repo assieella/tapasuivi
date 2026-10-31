@@ -98,41 +98,103 @@
 
     function afficherGraphique(series, mode) {
       const cle = mode === 'prix' ? 'valeur' : 'variation_pct';
-      const largeur = 700, hauteur = 300, marge = 40;
+      const L = 720, H = 340, mg = 86, md = 22, mh = 24, mb = 40;
       const toutesValeurs = series.flatMap(s => s.points.map(p => p[cle]));
-      const minVal = mode === 'prix' ? Math.min(...toutesValeurs) : Math.min(0, ...toutesValeurs);
-      const maxVal = mode === 'prix' ? Math.max(...toutesValeurs) : Math.max(0, ...toutesValeurs);
-      const ecart = (maxVal - minVal) || 1;
-      const nbPoints = Math.max(...series.map(s => s.points.length));
+      let minVal = Math.min(...toutesValeurs), maxVal = Math.max(...toutesValeurs);
+      if (mode === 'pct') { minVal = Math.min(0, minVal); maxVal = Math.max(0, maxVal); }
 
-      let svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%; height:auto;">`;
+      // Graduations « rondes » (1, 2 ou 5 × puissance de 10) : ex. 3 000, 3 500, 4 000 FCFA ou -10 %, 0 %, +10 %.
+      const etendue = (maxVal - minVal) || Math.max(1, Math.abs(maxVal) * 0.1);
+      const pas0 = etendue / 5;
+      const puiss = Math.pow(10, Math.floor(Math.log10(pas0)));
+      const frac = pas0 / puiss;
+      const pasPrix = (frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10) * puiss;
+      const bas = Math.floor(minVal / pasPrix) * pasPrix;
+      let haut = Math.ceil(maxVal / pasPrix) * pasPrix;
+      if (haut <= bas) haut = bas + pasPrix;
+      const graduations = [];
+      for (let v = bas; v <= haut + pasPrix / 1000; v += pasPrix) graduations.push(Math.round(v * 1e6) / 1e6);
 
-      if (mode === 'pct') {
-        const yPourZero = hauteur - marge - ((0 - minVal) / ecart) * (hauteur - 2 * marge);
-        svg += `<line x1="${marge}" y1="${yPourZero}" x2="${largeur - marge}" y2="${yPourZero}" stroke="#ccc" stroke-dasharray="4" />`;
-      }
+      const fmt = v => {
+        const t = Number(v).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+        return mode === 'pct' ? (v > 0 ? '+' : '') + t + ' %' : t;
+      };
+      const Y = v => H - mb - ((v - bas) / (haut - bas)) * (H - mb - mh);
+      const largeurZone = L - mg - md;
+      const X = (idx, n) => mg + idx * (largeurZone / ((n - 1) || 1));
+      const fmtDate = (d, long) => new Date(d).toLocaleDateString('fr-FR', long ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+      const unite = mode === 'pct' ? '' : 'Prix (FCFA)';
 
-      series.forEach((s, i) => {
-        const couleur = COULEURS[i % COULEURS.length];
-        const coords = s.points.map((p, idx) => {
-          const x = marge + idx * (nbPoints > 1 ? (largeur - 2 * marge) / (s.points.length - 1 || 1) : 0);
-          const y = hauteur - marge - ((p[cle] - minVal) / ecart) * (hauteur - 2 * marge);
-          return `${x},${y}`;
-        }).join(' ');
-        svg += `<polyline points="${coords}" fill="none" stroke="${couleur}" stroke-width="2.5" />`;
+      let svg = `<svg id="svg-comparaison" viewBox="0 0 ${L} ${H}" style="width:100%; height:auto; touch-action:pan-y; cursor:crosshair;">`;
+      if (unite) svg += `<text x="${mg - 10}" y="${mh - 10}" font-size="11" fill="#777" text-anchor="end" font-weight="600">${unite}</text>`;
+      else svg += `<text x="${mg - 10}" y="${mh - 10}" font-size="11" fill="#777" text-anchor="end" font-weight="600">Variation</text>`;
+
+      graduations.forEach(v => {
+        const estZero = mode === 'pct' && v === 0;
+        svg += `<line x1="${mg}" y1="${Y(v)}" x2="${L - md}" y2="${Y(v)}" stroke="${estZero ? '#9AA5B5' : '#E8ECF2'}" ${estZero ? 'stroke-dasharray="4"' : ''} />`;
+        svg += `<text x="${mg - 10}" y="${Y(v) + 4}" font-size="12" fill="#555" text-anchor="end">${fmt(v)}</text>`;
       });
 
       const serieRef = series.reduce((a, b) => a.points.length > b.points.length ? a : b);
-      const pasEtiquette = Math.max(1, Math.floor(serieRef.points.length / 6));
-      serieRef.points.forEach((p, idx) => {
-        if (idx % pasEtiquette === 0) {
-          const x = marge + idx * (largeur - 2 * marge) / (serieRef.points.length - 1 || 1);
-          svg += `<text x="${x}" y="${hauteur - 8}" font-size="9" fill="#999" text-anchor="middle">${new Date(p.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</text>`;
-        }
+      const nRef = serieRef.points.length;
+      const nbDates = Math.min(nRef, 6);
+      const indicesDates = [...new Set(Array.from({ length: nbDates }, (_, k) => Math.round(k * (nRef - 1) / ((nbDates - 1) || 1))))];
+      indicesDates.forEach(idx => {
+        const x = X(idx, nRef);
+        svg += `<line x1="${x}" y1="${H - mb}" x2="${x}" y2="${H - mb + 5}" stroke="#B8C0CC" />`;
+        svg += `<text x="${x}" y="${H - mb + 20}" font-size="12" fill="#555" text-anchor="${idx === 0 ? 'start' : (idx === nRef - 1 ? 'end' : 'middle')}">${fmtDate(serieRef.points[idx].date)}</text>`;
       });
 
+      series.forEach((s, i) => {
+        const couleur = COULEURS[i % COULEURS.length];
+        const n = s.points.length;
+        const coords = s.points.map((p, idx) => `${X(idx, n)},${Y(p[cle])}`).join(' ');
+        svg += `<polyline points="${coords}" fill="none" stroke="${couleur}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />`;
+        const dernier = s.points[n - 1];
+        svg += `<circle cx="${X(n - 1, n)}" cy="${Y(dernier[cle])}" r="4.5" fill="${couleur}" stroke="#fff" stroke-width="2" />`;
+      });
+
+      svg += `<g id="survol-cmp" style="display:none; pointer-events:none;"><line id="cmp-ligne" y1="${mh - 4}" y2="${H - mb}" stroke="#C9A227" stroke-width="1.5" stroke-dasharray="4 3" /><g id="cmp-boite"></g></g>`;
       svg += `</svg>`;
-      document.getElementById('graphique').innerHTML = svg;
+      const zone = document.getElementById('graphique');
+      zone.innerHTML = svg + `<p style="font-size:12px; color:#777; margin-top:6px;">Passez la souris (ou le doigt) sur le graphique pour lire la date et la valeur de chaque courbe.</p>`;
+
+      // Survol : une bulle avec la date et la valeur de chaque courbe.
+      const el = zone.querySelector('#svg-comparaison');
+      const groupe = zone.querySelector('#survol-cmp');
+      const boite = zone.querySelector('#cmp-boite');
+      const ligneSurvol = zone.querySelector('#cmp-ligne');
+      const montrer = clientX => {
+        const r = el.getBoundingClientRect();
+        const xSvg = (clientX - r.left) * L / r.width;
+        const f = Math.max(0, Math.min(1, (xSvg - mg) / largeurZone));
+        const x = mg + f * largeurZone;
+        const lignes = series.map((s, i) => {
+          const idx = Math.round(f * (s.points.length - 1));
+          const p = s.points[idx];
+          return { couleur: COULEURS[i % COULEURS.length], label: s.id, valeur: p[cle], date: p.date, y: Y(p[cle]), x: X(idx, s.points.length) };
+        });
+        const dateRef = lignes[0] ? lignes[0].date : null;
+        groupe.style.display = 'block';
+        ligneSurvol.setAttribute('x1', x); ligneSurvol.setAttribute('x2', x);
+        const hauteurBoite = 26 + lignes.length * 18;
+        const largeurBoite = 176;
+        const bx = x > L / 2 ? x - largeurBoite - 10 : x + 10;
+        boite.innerHTML = `<rect x="${bx}" y="${mh}" width="${largeurBoite}" height="${hauteurBoite}" rx="8" fill="#0F2F59" />
+          <text x="${bx + 10}" y="${mh + 17}" font-size="11.5" fill="#DDE3EE">${dateRef ? fmtDate(dateRef, true) : ''}</text>
+          ${lignes.map((l, k) => `<circle cx="${bx + 14}" cy="${mh + 31 + k * 18}" r="4.5" fill="${l.couleur}" stroke="#fff" stroke-width="1.5" /><text x="${bx + 24}" y="${mh + 35 + k * 18}" font-size="12" font-weight="700" fill="#fff">${l.label} : ${mode === 'pct' ? fmt(l.valeur) : fmt(l.valeur) + (l.label === 'BRVM-C' ? ' pts' : ' FCFA')}</text>`).join('')}`;
+        zone.querySelectorAll('.pt-survol').forEach(n => n.remove());
+        lignes.forEach(l => {
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('class', 'pt-survol'); c.setAttribute('cx', l.x); c.setAttribute('cy', l.y); c.setAttribute('r', 5);
+          c.setAttribute('fill', l.couleur); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', 2);
+          el.insertBefore(c, groupe);
+        });
+      };
+      const cacher = () => { groupe.style.display = 'none'; zone.querySelectorAll('.pt-survol').forEach(n => n.remove()); };
+      el.addEventListener('pointermove', e => montrer(e.clientX));
+      el.addEventListener('pointerdown', e => montrer(e.clientX));
+      el.addEventListener('pointerleave', cacher);
 
       document.getElementById('legende').innerHTML = series.map((s, i) => {
         const couleur = COULEURS[i % COULEURS.length];
