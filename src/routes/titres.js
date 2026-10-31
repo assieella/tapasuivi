@@ -72,6 +72,8 @@ router.get('/marche/top-flop-semaine', requireAuth, requireProgrammeActif, async
   });
 });
 
+const { calculerIndicateurs } = require('../services/indicateurs');
+
 router.get('/:ticker', requireAuth, requireProgrammeActif, async (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
   const titre = await pool.query('SELECT * FROM titres_brvm WHERE ticker = $1', [ticker]);
@@ -94,6 +96,13 @@ router.get('/:ticker', requireAuth, requireProgrammeActif, async (req, res) => {
   const etudes = peutVoirEtudes
     ? await pool.query('SELECT id, titre, contenu, date_publication FROM etudes_titres WHERE ticker = $1 ORDER BY date_publication DESC LIMIT 10', [ticker])
     : { rows: [] };
+  // Moyennes mobiles (MM20, MM50) et RSI : réservés aux clients payants et à l'administrateur, comme les études.
+  // Un compte gratuit ne reçoit jamais ces données — seulement l'indication qu'elles existent.
+  let indicateurs = null;
+  if (peutVoirEtudes) {
+    const tous = await pool.query('SELECT date_cours, cours FROM cours_quotidiens WHERE ticker = $1 ORDER BY date_cours ASC', [ticker]);
+    indicateurs = calculerIndicateurs(tous.rows);
+  }
   const nombreEtudes = (await pool.query('SELECT COUNT(*)::int AS n FROM etudes_titres WHERE ticker = $1', [ticker])).rows[0].n;
   let performance_pct = null;
   if (historique.rows.length >= 2) {
@@ -101,7 +110,7 @@ router.get('/:ticker', requireAuth, requireProgrammeActif, async (req, res) => {
     const plusAncien = Number(historique.rows[historique.rows.length - 1].cours);
     if (plusAncien > 0) performance_pct = Math.round(((plusRecent - plusAncien) / plusAncien) * 10000) / 100;
   }
-  res.json({ titre: titre.rows[0], historique: historique.rows, dividendes: dividendes.rows, donnees_financieres: donneesFinancieres.rows, etudes: etudes.rows, etudes_reservees: !peutVoirEtudes, nombre_etudes: nombreEtudes, performance_pct });
+  res.json({ titre: titre.rows[0], historique: historique.rows, dividendes: dividendes.rows, donnees_financieres: donneesFinancieres.rows, etudes: etudes.rows, etudes_reservees: !peutVoirEtudes, indicateurs, indicateurs_reserves: !peutVoirEtudes, nombre_etudes: nombreEtudes, performance_pct });
 });
 
 module.exports = router;

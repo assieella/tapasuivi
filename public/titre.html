@@ -74,88 +74,144 @@
     }
 
 
-    // Graphique de l'évolution du cours : axe des prix gradué en FCFA, dates en bas, plus bas / plus haut
-    // repérés, et survol (souris ou doigt) qui affiche la date, le prix et la variation du jour.
-    function dessinerGraphiqueCours(historique) {
-      const points = [...historique].reverse().map(p => ({ date: new Date(p.date_cours), cours: Number(p.cours) }));
+    // Graphique de l'évolution du cours : axe des prix gradué en FCFA, dates en bas, plus bas / plus haut repérés,
+    // survol (souris ou doigt). Pour les clients payants : moyennes mobiles MM20 / MM50 et RSI (14) en option.
+    function dessinerGraphiqueCours(historique, indic, reserve) {
+      const avecIndic = !!(indic && indic.points && indic.points.length >= 2);
+      const points = avecIndic
+        ? indic.points.map(p => ({ date: new Date(p.date), cours: Number(p.cours), mm20: p.mm20, mm50: p.mm50, rsi: p.rsi }))
+        : [...historique].reverse().map(p => ({ date: new Date(p.date_cours), cours: Number(p.cours) }));
       const n = points.length;
-      const L = 720, H = 330, mg = 92, md = 24, mh = 30, mb = 40;
+      const nbCours = avecIndic ? indic.nb_cours : n;
+      const etat = { mm20: true, mm50: true, rsi: true };
       const fmt = v => Math.round(v).toLocaleString('fr-FR');
       const fmtDate = (d, long) => d.toLocaleDateString('fr-FR', long ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
-      const valeurs = points.map(p => p.cours);
-      const minVal = Math.min(...valeurs), maxVal = Math.max(...valeurs);
+      const dispoMM20 = avecIndic && points.some(p => p.mm20 !== null);
+      const dispoMM50 = avecIndic && points.some(p => p.mm50 !== null);
+      const dispoRSI = avecIndic && points.some(p => p.rsi !== null);
 
-      // Graduations « rondes » : pas de 1, 2 ou 5 fois une puissance de 10 (ex. 3 000, 3 500, 4 000 FCFA).
-      const etendue = (maxVal - minVal) || Math.max(1, maxVal * 0.1);
-      const pas0 = etendue / 5;
-      const puiss = Math.pow(10, Math.floor(Math.log10(pas0)));
-      const frac = pas0 / puiss;
-      const pasPrix = Math.max(1, (frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10) * puiss);
-      const bas = Math.floor(minVal / pasPrix) * pasPrix;
-      let haut = Math.ceil(maxVal / pasPrix) * pasPrix;
-      if (haut <= bas) haut = bas + pasPrix;
-      const graduations = [];
-      for (let v = bas; v <= haut + 1e-9; v += pasPrix) graduations.push(v);
+      function rendre() {
+        const L = 720, mg = 92, md = 24, mh = 30, mb = 40, hPrix = 330;
+        const afficheRSI = dispoRSI && etat.rsi;
+        const hRsi = afficheRSI ? 130 : 0;
+        const H = hPrix + hRsi;
+        const valeurs = points.map(p => p.cours);
+        const extra = [];
+        if (etat.mm20) points.forEach(p => { if (p.mm20 !== null && p.mm20 !== undefined) extra.push(p.mm20); });
+        if (etat.mm50) points.forEach(p => { if (p.mm50 !== null && p.mm50 !== undefined) extra.push(p.mm50); });
+        const minVal = Math.min(...valeurs, ...extra), maxVal = Math.max(...valeurs, ...extra);
 
-      const pas = (L - mg - md) / (n - 1);
-      const X = i => mg + i * pas;
-      const Y = v => H - mb - ((v - bas) / (haut - bas)) * (H - mb - mh);
-      const iMin = valeurs.indexOf(minVal), iMax = valeurs.indexOf(maxVal);
-      const ligne = points.map((p, i) => `${X(i)},${Y(p.cours)}`).join(' ');
-      const aire = `M ${X(0)},${H - mb} L ${ligne.replace(/ /g, ' L ')} L ${X(n - 1)},${H - mb} Z`;
+        // Graduations « rondes » : pas de 1, 2 ou 5 fois une puissance de 10 (ex. 3 000, 3 500, 4 000 FCFA).
+        const etendue = (maxVal - minVal) || Math.max(1, maxVal * 0.1);
+        const pas0 = etendue / 5;
+        const puiss = Math.pow(10, Math.floor(Math.log10(pas0)));
+        const frac = pas0 / puiss;
+        const pasPrix = Math.max(1, (frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10) * puiss);
+        const bas = Math.floor(minVal / pasPrix) * pasPrix;
+        let haut = Math.ceil(maxVal / pasPrix) * pasPrix;
+        if (haut <= bas) haut = bas + pasPrix;
+        const graduations = [];
+        for (let v = bas; v <= haut + 1e-9; v += pasPrix) graduations.push(v);
 
-      // Environ 6 dates réparties sur l'axe, première et dernière comprises.
-      const nbDates = Math.min(n, 6);
-      const indicesDates = [...new Set(Array.from({ length: nbDates }, (_, k) => Math.round(k * (n - 1) / (nbDates - 1))))];
+        const pas = (L - mg - md) / (n - 1);
+        const X = i => mg + i * pas;
+        const Y = v => hPrix - mb - ((v - bas) / (haut - bas)) * (hPrix - mb - mh);
+        const iMin = valeurs.indexOf(Math.min(...valeurs)), iMax = valeurs.indexOf(Math.max(...valeurs));
+        const ligne = points.map((p, i) => `${X(i)},${Y(p.cours)}`).join(' ');
+        const aire = `M ${X(0)},${hPrix - mb} L ${ligne.replace(/ /g, ' L ')} L ${X(n - 1)},${hPrix - mb} Z`;
+        const nbDates = Math.min(n, 6);
+        const indicesDates = [...new Set(Array.from({ length: nbDates }, (_, k) => Math.round(k * (n - 1) / (nbDates - 1))))];
+        const etiquette = (i, texte, couleur) => {
+          const x = X(i), ancre = x < mg + 70 ? 'start' : (x > L - md - 70 ? 'end' : 'middle');
+          return `<text x="${x}" y="${Y(points[i].cours) - 11}" font-size="11.5" font-weight="700" fill="${couleur}" text-anchor="${ancre}">${texte}</text>`;
+        };
+        const trace = (cle, couleur, tirets) => {
+          const pts = points.map((p, i) => (p[cle] === null || p[cle] === undefined) ? null : `${X(i)},${Y(p[cle])}`).filter(Boolean);
+          return pts.length >= 2 ? `<polyline points="${pts.join(' ')}" fill="none" stroke="${couleur}" stroke-width="2" ${tirets ? 'stroke-dasharray="6 4"' : ''} stroke-linejoin="round" />` : '';
+        };
 
-      const etiquette = (i, texte, couleur) => {
-        const x = X(i), ancre = x < mg + 70 ? 'start' : (x > L - md - 70 ? 'end' : 'middle');
-        return `<text x="${x}" y="${Y(points[i].cours) - 11}" font-size="11.5" font-weight="700" fill="${couleur}" text-anchor="${ancre}">${texte}</text>`;
-      };
+        // Panneau RSI sous le graphique (échelle 0 à 100, repères à 30 et 70)
+        let rsiSvg = '';
+        if (afficheRSI) {
+          const top = hPrix + 14, bot = H - 14;
+          const YR = v => bot - (v / 100) * (bot - top);
+          rsiSvg = `<text x="${mg + 4}" y="${top - 5}" font-size="11" fill="#7B3FA0" text-anchor="start" font-weight="700">RSI (14)</text>
+            <rect x="${mg}" y="${YR(70)}" width="${L - mg - md}" height="${YR(30) - YR(70)}" fill="#F4F6FA" />
+            ${[0, 30, 50, 70, 100].map(v => `<line x1="${mg}" y1="${YR(v)}" x2="${L - md}" y2="${YR(v)}" stroke="${v === 30 || v === 70 ? '#B8C0CC' : '#E8ECF2'}" ${v === 30 || v === 70 ? 'stroke-dasharray="4 3"' : ''} /><text x="${mg - 10}" y="${YR(v) + 4}" font-size="11" fill="#777" text-anchor="end">${v}</text>`).join('')}
+            ${(() => { const pts = points.map((p, i) => p.rsi === null || p.rsi === undefined ? null : `${X(i)},${YR(p.rsi)}`).filter(Boolean); return pts.length >= 2 ? `<polyline points="${pts.join(' ')}" fill="none" stroke="#7B3FA0" stroke-width="2" stroke-linejoin="round" />` : ''; })()}`;
+        }
 
-      const svg = `
-        <svg id="svg-cours" viewBox="0 0 ${L} ${H}" style="width:100%; height:auto; touch-action:pan-y; cursor:crosshair;">
-          <defs><linearGradient id="degrade-cours" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F2F59" stop-opacity="0.18"/><stop offset="100%" stop-color="#0F2F59" stop-opacity="0.02"/></linearGradient></defs>
-          <text x="${mg - 10}" y="${mh - 14}" font-size="11" fill="#777" text-anchor="end" font-weight="600">Prix (FCFA)</text>
-          ${graduations.map(v => `<line x1="${mg}" y1="${Y(v)}" x2="${L - md}" y2="${Y(v)}" stroke="${v === bas ? '#B8C0CC' : '#E8ECF2'}" /><text x="${mg - 10}" y="${Y(v) + 4}" font-size="12" fill="#555" text-anchor="end">${fmt(v)}</text>`).join('')}
-          ${indicesDates.map(i => `<line x1="${X(i)}" y1="${H - mb}" x2="${X(i)}" y2="${H - mb + 5}" stroke="#B8C0CC" /><text x="${X(i)}" y="${H - mb + 20}" font-size="12" fill="#555" text-anchor="${i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle')}">${fmtDate(points[i].date)}</text>`).join('')}
-          <path d="${aire}" fill="url(#degrade-cours)" />
-          <polyline points="${ligne}" fill="none" stroke="#0F2F59" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
-          <circle cx="${X(iMax)}" cy="${Y(maxVal)}" r="5" fill="#0B6E4F" stroke="#fff" stroke-width="2" />${etiquette(iMax, fmt(maxVal), '#0B6E4F')}
-          ${iMin !== iMax ? `<circle cx="${X(iMin)}" cy="${Y(minVal)}" r="5" fill="#C0392B" stroke="#fff" stroke-width="2" />${etiquette(iMin, fmt(minVal), '#C0392B')}` : ''}
-          <circle cx="${X(n - 1)}" cy="${Y(valeurs[n - 1])}" r="5.5" fill="#C9A227" stroke="#fff" stroke-width="2" />
-          <g id="survol-cours" style="display:none; pointer-events:none;">
-            <line id="survol-ligne" y1="${mh - 6}" y2="${H - mb}" stroke="#C9A227" stroke-width="1.5" stroke-dasharray="4 3" />
-            <circle id="survol-point" r="6" fill="#C9A227" stroke="#fff" stroke-width="2" />
-            <g id="survol-boite"><rect width="150" height="50" rx="8" fill="#0F2F59" /><text id="survol-prix" x="12" y="21" font-size="14" font-weight="700" fill="#fff"></text><text id="survol-date" x="12" y="39" font-size="11.5" fill="#DDE3EE"></text></g>
-          </g>
-        </svg>`;
-      document.getElementById('graphique-content').style.display = 'block';
-      const conteneur = document.getElementById('graphique-cours');
-      conteneur.innerHTML = svg + `<p style="font-size:12px; color:#777; margin-top:6px;">Du ${fmtDate(points[0].date, true)} au ${fmtDate(points[n - 1].date, true)} — Plus bas : <strong>${fmt(minVal)} FCFA</strong> — Plus haut : <strong>${fmt(maxVal)} FCFA</strong>. Passez la souris (ou le doigt) sur la courbe pour lire chaque prix.</p>`;
+        const svg = `
+          <svg id="svg-cours" viewBox="0 0 ${L} ${H}" style="width:100%; height:auto; touch-action:pan-y; cursor:crosshair;">
+            <defs><linearGradient id="degrade-cours" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F2F59" stop-opacity="0.18"/><stop offset="100%" stop-color="#0F2F59" stop-opacity="0.02"/></linearGradient></defs>
+            <text x="${mg - 10}" y="${mh - 14}" font-size="11" fill="#777" text-anchor="end" font-weight="600">Prix (FCFA)</text>
+            ${graduations.map(v => `<line x1="${mg}" y1="${Y(v)}" x2="${L - md}" y2="${Y(v)}" stroke="${v === bas ? '#B8C0CC' : '#E8ECF2'}" /><text x="${mg - 10}" y="${Y(v) + 4}" font-size="12" fill="#555" text-anchor="end">${fmt(v)}</text>`).join('')}
+            ${indicesDates.map(i => `<line x1="${X(i)}" y1="${hPrix - mb}" x2="${X(i)}" y2="${hPrix - mb + 5}" stroke="#B8C0CC" /><text x="${X(i)}" y="${hPrix - mb + 20}" font-size="12" fill="#555" text-anchor="${i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle')}">${fmtDate(points[i].date)}</text>`).join('')}
+            <path d="${aire}" fill="url(#degrade-cours)" />
+            <polyline points="${ligne}" fill="none" stroke="#0F2F59" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+            ${etat.mm20 ? trace('mm20', '#C9A227', false) : ''}${etat.mm50 ? trace('mm50', '#0B8A8A', true) : ''}
+            <circle cx="${X(iMax)}" cy="${Y(points[iMax].cours)}" r="5" fill="#0B6E4F" stroke="#fff" stroke-width="2" />${etiquette(iMax, fmt(points[iMax].cours), '#0B6E4F')}
+            ${iMin !== iMax ? `<circle cx="${X(iMin)}" cy="${Y(points[iMin].cours)}" r="5" fill="#C0392B" stroke="#fff" stroke-width="2" />${etiquette(iMin, fmt(points[iMin].cours), '#C0392B')}` : ''}
+            <circle cx="${X(n - 1)}" cy="${Y(valeurs[n - 1])}" r="5.5" fill="#C9A227" stroke="#fff" stroke-width="2" />
+            ${rsiSvg}
+            <g id="survol-cours" style="display:none; pointer-events:none;">
+              <line id="survol-ligne" y1="${mh - 6}" y2="${hPrix - mb + (afficheRSI ? hRsi : 0)}" stroke="#C9A227" stroke-width="1.5" stroke-dasharray="4 3" />
+              <circle id="survol-point" r="6" fill="#C9A227" stroke="#fff" stroke-width="2" />
+              <g id="survol-boite"></g>
+            </g>
+          </svg>`;
 
-      const el = conteneur.querySelector('#svg-cours');
-      const groupe = conteneur.querySelector('#survol-cours');
-      const montrer = clientX => {
-        const r = el.getBoundingClientRect();
-        const xSvg = (clientX - r.left) * L / r.width;
-        const i = Math.max(0, Math.min(n - 1, Math.round((xSvg - mg) / pas)));
-        const p = points[i], x = X(i), y = Y(p.cours);
-        const prec = i > 0 ? points[i - 1].cours : null;
-        const variation = prec ? ((p.cours - prec) / prec) * 100 : null;
-        groupe.style.display = 'block';
-        conteneur.querySelector('#survol-ligne').setAttribute('x1', x);
-        conteneur.querySelector('#survol-ligne').setAttribute('x2', x);
-        conteneur.querySelector('#survol-point').setAttribute('cx', x);
-        conteneur.querySelector('#survol-point').setAttribute('cy', y);
-        conteneur.querySelector('#survol-prix').textContent = `${fmt(p.cours)} FCFA` + (variation !== null ? `  ${variation >= 0 ? '+' : ''}${variation.toFixed(2).replace('.', ',')} %` : '');
-        conteneur.querySelector('#survol-date').textContent = fmtDate(p.date, true);
-        const bx = x > L / 2 ? x - 162 : x + 12;
-        conteneur.querySelector('#survol-boite').setAttribute('transform', `translate(${bx},${Math.max(mh, Math.min(y - 25, H - mb - 55))})`);
-      };
-      el.addEventListener('pointermove', e => montrer(e.clientX));
-      el.addEventListener('pointerdown', e => montrer(e.clientX));
-      el.addEventListener('pointerleave', () => { groupe.style.display = 'none'; });
+        let controles = '';
+        if (avecIndic) {
+          const case_ = (cle, texte, couleur, dispo) => `<label style="display:inline-flex; align-items:center; gap:6px; margin-right:16px; font-size:13px; font-weight:400; ${dispo ? '' : 'opacity:.5;'}"><input type="checkbox" style="width:auto;" ${etat[cle] && dispo ? 'checked' : ''} ${dispo ? '' : 'disabled'} onchange="window.__basculerIndic('${cle}', this.checked)"><span style="display:inline-block; width:18px; height:3px; background:${couleur}; border-radius:2px;"></span>${texte}</label>`;
+          controles = `<div style="margin-bottom:10px;">${case_('mm20', 'MM20', '#C9A227', dispoMM20)}${case_('mm50', 'MM50', '#0B8A8A', dispoMM50)}${case_('rsi', 'RSI (14)', '#7B3FA0', dispoRSI)}</div>`;
+        }
+        let notes = '';
+        if (avecIndic) {
+          const manque = [];
+          if (!dispoMM20) manque.push(`MM20 : disponible après 20 cours enregistrés (${nbCours}/20)`);
+          if (!dispoMM50) manque.push(`MM50 : disponible après 50 cours enregistrés (${nbCours}/50)`);
+          if (!dispoRSI) manque.push(`RSI : disponible après 15 cours enregistrés (${nbCours}/15)`);
+          if (manque.length) notes += `<p style="font-size:12px; color:#777; margin-top:6px;">⏳ ${manque.join(' · ')}.</p>`;
+          notes += `<p style="font-size:12px; color:#777; margin-top:6px;"><strong>MM20 / MM50</strong> : moyenne des 20 / 50 derniers cours, qui lisse les variations pour montrer la tendance. <strong>RSI</strong> : mesure de 0 à 100 la vigueur des variations récentes ; on parle souvent de zone « haute » au-dessus de 70 et de zone « basse » en dessous de 30. Ce sont des repères de lecture, pas des signaux d'achat ou de vente. Calculs sur les cours de clôture enregistrés.</p>`;
+        } else if (reserve) {
+          notes += `<p style="font-size:12px; color:#555; margin-top:8px; background:#F6F8FB; padding:8px 12px; border-radius:8px;">🔒 Moyennes mobiles (MM20, MM50) et RSI : réservés aux clients de l'accompagnement BRVM Starter.</p>`;
+        }
+
+        document.getElementById('graphique-content').style.display = 'block';
+        const conteneur = document.getElementById('graphique-cours');
+        conteneur.innerHTML = controles + svg + `<p style="font-size:12px; color:#777; margin-top:6px;">Du ${fmtDate(points[0].date, true)} au ${fmtDate(points[n - 1].date, true)} — Plus bas : <strong>${fmt(points[iMin].cours)} FCFA</strong> — Plus haut : <strong>${fmt(points[iMax].cours)} FCFA</strong>. Passez la souris (ou le doigt) sur la courbe pour lire chaque prix.</p>` + notes;
+
+        const el = conteneur.querySelector('#svg-cours');
+        const groupe = conteneur.querySelector('#survol-cours');
+        const montrer = clientX => {
+          const r = el.getBoundingClientRect();
+          const xSvg = (clientX - r.left) * L / r.width;
+          const i = Math.max(0, Math.min(n - 1, Math.round((xSvg - mg) / pas)));
+          const p = points[i], x = X(i), y = Y(p.cours);
+          const prec = i > 0 ? points[i - 1].cours : null;
+          const variation = prec ? ((p.cours - prec) / prec) * 100 : null;
+          groupe.style.display = 'block';
+          conteneur.querySelector('#survol-ligne').setAttribute('x1', x);
+          conteneur.querySelector('#survol-ligne').setAttribute('x2', x);
+          conteneur.querySelector('#survol-point').setAttribute('cx', x);
+          conteneur.querySelector('#survol-point').setAttribute('cy', y);
+          const lignes = [`${fmt(p.cours)} FCFA` + (variation !== null ? `  ${variation >= 0 ? '+' : ''}${variation.toFixed(2).replace('.', ',')} %` : ''), fmtDate(p.date, true)];
+          const supp = [];
+          if (etat.mm20 && p.mm20 !== null && p.mm20 !== undefined) supp.push(`MM20 : ${fmt(p.mm20)}`);
+          if (etat.mm50 && p.mm50 !== null && p.mm50 !== undefined) supp.push(`MM50 : ${fmt(p.mm50)}`);
+          if (afficheRSI && p.rsi !== null && p.rsi !== undefined) supp.push(`RSI : ${String(p.rsi).replace('.', ',')}`);
+          const hb = 50 + (supp.length ? 6 + supp.length * 16 : 0);
+          const bx = x > L / 2 ? x - 192 : x + 12;
+          const by = Math.max(mh, Math.min(y - 25, hPrix - mb - hb - 5));
+          conteneur.querySelector('#survol-boite').innerHTML = `<g transform="translate(${bx},${by})"><rect width="180" height="${hb}" rx="8" fill="#0F2F59" /><text x="12" y="21" font-size="13.5" font-weight="700" fill="#fff">${lignes[0]}</text><text x="12" y="39" font-size="11.5" fill="#DDE3EE">${lignes[1]}</text>${supp.map((t, k) => `<text x="12" y="${58 + k * 16}" font-size="11.5" fill="#F2D675">${t}</text>`).join('')}</g>`;
+        };
+        el.addEventListener('pointermove', e => montrer(e.clientX));
+        el.addEventListener('pointerdown', e => montrer(e.clientX));
+        el.addEventListener('pointerleave', () => { groupe.style.display = 'none'; });
+      }
+      window.__basculerIndic = (cle, actif) => { etat[cle] = actif; rendre(); };
+      rendre();
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -164,7 +220,7 @@
       const user = await requireLogin(); if (!user) return;
       if (!ticker) { document.getElementById('fiche-content').innerHTML = '<p class="error">Aucun titre spécifié.</p>'; return; }
       try {
-        const { titre, historique, dividendes, donnees_financieres, etudes, etudes_reservees, nombre_etudes, performance_pct } = await apiCall(`/api/titres/${ticker}`);
+        const { titre, historique, dividendes, donnees_financieres, etudes, etudes_reservees, nombre_etudes, performance_pct, indicateurs, indicateurs_reserves } = await apiCall(`/api/titres/${ticker}`);
         const dernierCours = historique[0];
         document.getElementById('fiche-content').innerHTML = `
           <h1>${titre.nom}</h1>
@@ -271,7 +327,7 @@
         elEtudes.innerHTML = etudes.length ? `<h2>Études publiées par TAPA CONSEIL</h2>${etudes.map(rendreEtude).join('')}` : `<h2>Études publiées par TAPA CONSEIL</h2><p style="color:#999;">Aucune étude publiée pour ce titre pour le moment.</p>`;
 
         // Graphique du cours : prix (FCFA) à gauche, dates en bas, survol pour lire la date et le prix.
-        if (historique.length >= 2) dessinerGraphiqueCours(historique);
+        if (historique.length >= 2) dessinerGraphiqueCours(historique, indicateurs, indicateurs_reserves);
       } catch (e) { document.getElementById('fiche-content').innerHTML = `<p class="error">${e.message}</p>`; }
     })();
   </script>
