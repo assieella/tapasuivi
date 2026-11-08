@@ -10,28 +10,46 @@
   <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Back-office</span></div><a href="/admin.html">← Retour</a></div>
   <div class="container">
     <div class="card">
-      <h1>🏫 Réservations — Formation en présentiel</h1>
-      <p style="font-size:13px; color:#666;">Personnes ayant réservé leur place depuis le site (février 2027, chaque fin de mois).</p>
+      <h1>🏫 Liste d'attente — formations et séances</h1>
+      <p style="font-size:13px; color:#666;">Personnes inscrites depuis le site (présentiel à partir de janvier 2027, chaque fin de mois). Filtrez par parcours choisi.</p>
+      <select id="filtre-parcours" onchange="afficher()" style="width:auto; margin-bottom:14px;"></select>
       <div id="liste-reservations"><p>Chargement...</p></div>
     </div>
   </div>
   <script src="/js/api.js"></script>
   <script>
-    async function chargerReservations() {
+    let toutes = [];
+    function afficher() {
       const el = document.getElementById('liste-reservations');
-      const { reservations } = await apiCall('/api/admin/reservations-presentiel');
-      if (!reservations.length) { el.innerHTML = '<p style="color:#999;">Aucune réservation pour le moment.</p>'; return; }
-      el.innerHTML = reservations.map(r => `
+      const filtre = document.getElementById('filtre-parcours').value;
+      const liste = filtre ? toutes.filter(r => (r.option_choisie || 'Formation en présentiel') === filtre) : toutes;
+      if (!liste.length) { el.innerHTML = '<p style="color:#999;">Aucune inscription pour le moment.</p>'; return; }
+      el.innerHTML = liste.map(r => `
         <div class="titre-row">
           <span class="titre-nom">
             <strong>${r.prenom} ${r.nom}</strong> — <a href="https://wa.me/${r.whatsapp.replace(/\D/g, '')}" target="_blank">${r.whatsapp}</a>
-            <br><span style="font-size:12px; color:#888;">${new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <br><span style="font-size:13px; color:#0A1B3D; font-weight:600;">${r.option_choisie || 'Formation en présentiel'}</span>
+            <span style="font-size:12px; color:#666;"> · ${r.tranche_age || 'âge non renseigné'} · ${r.objectif || 'objectif non renseigné'}</span>
+            <br><span style="font-size:12px; color:#888;">Inscrit(e) le ${new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </span>
           ${r.contactee
             ? '<span style="color:#0B6E4F; font-size:13px;">✅ Contactée</span>'
             : `<button onclick="marquerContactee(${r.id})" style="width:auto; padding:4px 12px; font-size:13px;">Marquer comme contactée</button>`}
         </div>
       `).join('');
+    }
+
+    async function chargerReservations() {
+      const { reservations } = await apiCall('/api/admin/reservations-presentiel');
+      toutes = reservations;
+      const compte = {};
+      toutes.forEach(r => { const k = r.option_choisie || 'Formation en présentiel'; compte[k] = (compte[k] || 0) + 1; });
+      const sel = document.getElementById('filtre-parcours');
+      const actuel = sel.value;
+      sel.innerHTML = `<option value="">Tous les parcours (${toutes.length})</option>` +
+        Object.keys(compte).sort().map(k => `<option value="${k}">${k} (${compte[k]})</option>`).join('');
+      sel.value = actuel;
+      afficher();
     }
 
     async function marquerContactee(id) {

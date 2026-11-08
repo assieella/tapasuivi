@@ -407,7 +407,7 @@ CREATE TABLE IF NOT EXISTS portefeuille_virtuel_ordres (
 );
 CREATE INDEX IF NOT EXISTS idx_pv_ordres_user ON portefeuille_virtuel_ordres(user_id);
 
--- Réservations pour la formation en présentiel (retour prévu à partir de février 2027,
+-- Réservations pour la formation en présentiel (retour prévu à partir de janvier 2027,
 -- chaque fin de mois) — simple capture nom/prénom/WhatsApp, pas de compte créé.
 CREATE TABLE IF NOT EXISTS reservations_presentiel (
   id SERIAL PRIMARY KEY,
@@ -417,6 +417,10 @@ CREATE TABLE IF NOT EXISTS reservations_presentiel (
   contactee BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+-- Option choisie (séance femmes, séance jeunes, formation...) — liste d'attente
+ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS option_choisie TEXT;
+ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS tranche_age TEXT;
+ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS objectif TEXT;
 
 -- Test TAPA "Suis-je prête à investir ?" — outil de génération de leads, accessible sans
 -- compte. Le score/résultat n'est révélé qu'après avoir renseigné l'email (capture du lead).

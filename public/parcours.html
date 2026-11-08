@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choisissez votre parcours de formation | TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<style>
+  :root { --navy: #0F2F59; --navy-deep: #081b36; --gold: #DAAA37; --gold-light: #F0D385; --cream: #FBF8F2; --ink: #1C2733; --rule: #E3DCC9; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--cream); line-height: 1.65; font-size: 17px; }
+  h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; color: var(--navy); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .topbar { background: var(--navy-deep); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar img { height: 38px; }
+  .topbar a { color: var(--gold-light); text-decoration: none; font-size: 14px; }
+  .hero { background: var(--navy-deep); color: white; padding: 56px 0 48px; }
+  .hero h1 { color: white; font-size: 38px; line-height: 1.2; margin-bottom: 18px; }
+  .hero h1 span { color: var(--gold-light); }
+  .hero p { color: #D9E2EF; font-size: 17px; max-width: 680px; margin-bottom: 12px; }
+  section { padding: 52px 0; }
+  .section-title { font-size: 28px; margin-bottom: 26px; }
+  .parcours { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .parcours .carte { background: white; border: 1px solid var(--rule); border-radius: 12px; padding: 26px 22px; display: flex; flex-direction: column; }
+  .parcours .carte .num { font-family: Georgia, serif; font-size: 34px; font-weight: 700; color: var(--gold); line-height: 1; margin-bottom: 8px; }
+  .parcours .carte h3 { font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .parcours .carte .pour { font-style: italic; color: #555; font-size: 15px; margin-bottom: 12px; }
+  .parcours .carte p { font-size: 15px; flex: 1; }
+  .parcours .carte .exemple { font-size: 14px; color: #666; margin-top: 12px; }
+  .devise { text-align: center; font-family: Georgia, serif; font-style: italic; font-size: 20px; color: var(--navy); margin-top: 34px; }
+  .formats { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .format { border-radius: 12px; padding: 28px 24px; }
+  .format.ligne { background: var(--navy); color: white; }
+  .format.ligne h3 { color: var(--gold-light); }
+  .format.presentiel { background: white; border: 1px solid var(--rule); }
+  .format h3 { font-size: 20px; margin-bottom: 4px; }
+  .format .badge { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }
+  .format.ligne .badge { background: var(--gold); color: var(--navy-deep); }
+  .format.presentiel .badge { background: var(--navy); color: var(--gold-light); }
+  .format p { font-size: 15px; margin-bottom: 14px; }
+  .btn-wa { display: block; text-align: center; background: var(--gold); color: var(--navy-deep); text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 40px; font-size: 15px; margin-bottom: 10px; }
+  .btn-form { display: block; text-align: center; background: var(--navy); color: white; text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 40px; font-size: 15px; }
+  .formulaire { background: white; border: 1px solid var(--rule); border-radius: 12px; padding: 32px 28px; max-width: 560px; margin: 0 auto; box-shadow: 0 2px 14px rgba(10,27,61,0.08); }
+  .formulaire label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 4px; }
+  .formulaire input, .formulaire select { width: 100%; padding: 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; font-family: inherit; background: white; }
+  .formulaire button { width: 100%; margin-top: 22px; background: var(--gold); color: var(--navy-deep); border: none; cursor: pointer; font-weight: 700; padding: 14px; border-radius: 40px; font-size: 16px; }
+  .formulaire button:disabled { opacity: 0.6; cursor: wait; }
+  .groupe { background: var(--navy-deep); color: white; text-align: center; padding: 44px 0; }
+  .groupe h2 { color: white; font-size: 24px; margin-bottom: 10px; }
+  .groupe p { color: #D9E2EF; margin-bottom: 18px; }
+  .groupe a { display: inline-block; background: #25D366; color: #073b1a; font-weight: 700; text-decoration: none; padding: 13px 30px; border-radius: 40px; }
+  footer { text-align: center; font-size: 13px; color: #777; padding: 22px; }
+  @media (max-width: 720px) {
+    .parcours, .formats { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 29px; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar"><img src="/images/logo.png" alt="TAPA CONSEIL"><a href="/">← Accueil</a></div>
+
+  <div class="hero">
+    <div class="wrap">
+      <h1>Votre argent. Votre réalité. <span>Votre formation.</span></h1>
+      <p>Nous avons tous besoin d'apprendre à gérer notre argent, mais nous n'avons pas tous les mêmes besoins.</p>
+      <p>À 22 ans, on apprend à gérer ses premières ressources. À 40 ans, on cherche à mieux maîtriser ses charges et à préparer son avenir. En tant que femme, on peut souhaiter renforcer son indépendance financière, protéger sa famille ou concrétiser ses projets.</p>
+      <p>Chez TAPA CONSEIL, l'éducation financière est adaptée à la réalité de chacun. C'est pourquoi nous vous proposons <strong style="color: var(--gold-light);">3 parcours</strong>.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Quel parcours est fait pour vous ?</h2>
+      <div class="parcours">
+        <div class="carte">
+          <div class="num">01</div>
+          <h3>BRVM Starter Adultes</h3>
+          <div class="pour">Pour les adultes actifs</div>
+          <p><strong>Objectif :</strong> reprendre le contrôle de ses finances, mieux gérer son budget, épargner et commencer à investir durablement.</p>
+          <div class="exemple">💼 Reprenez le contrôle de vos finances et construisez votre patrimoine.</div>
+        </div>
+        <div class="carte">
+          <div class="num">02</div>
+          <h3>BRVM Starter Jeunes</h3>
+          <div class="pour">Pour les 20 à 30 ans</div>
+          <p><strong>Objectif :</strong> acquérir très tôt les bons réflexes financiers, apprendre à gérer ses premières ressources et découvrir l'investissement.</p>
+          <div class="exemple">🎓 Prenez les bonnes habitudes financières dès aujourd'hui.</div>
+        </div>
+        <div class="carte">
+          <div class="num">03</div>
+          <h3>TAPA Invest Femme</h3>
+          <div class="pour">Pour les femmes</div>
+          <p><strong>Objectif :</strong> renforcer son autonomie financière, mieux organiser son argent, développer son épargne et investir pour l'avenir.</p>
+          <div class="exemple">🌸 Prenez votre autonomie financière en main et investissez dans votre avenir.</div>
+        </div>
+      </div>
+      <div class="devise">Un même objectif : mieux gérer, épargner et investir.</div>
+      <p style="text-align:center; font-size:14px; color:#777; margin-top:6px;">Budget • Épargne • Gestion des dettes • Investissement</p>
+    </div>
+  </section>
+
+  <section style="background: white;">
+    <div class="wrap">
+      <h2 class="section-title">Deux façons de suivre votre parcours</h2>
+      <div class="formats">
+        <div class="format ligne">
+          <span class="badge">Disponible immédiatement</span>
+          <h3>Formation en ligne</h3>
+          <p>Où que vous soyez, en Côte d'Ivoire ou à l'étranger. Écrivez-nous directement sur WhatsApp : nous vous indiquons comment démarrer tout de suite.</p>
+          <a class="btn-wa" data-parcours="BRVM Starter Adultes" href="#">💬 WhatsApp — Parcours Adultes</a>
+          <a class="btn-wa" data-parcours="BRVM Starter Jeunes" href="#">💬 WhatsApp — Parcours Jeunes</a>
+          <a class="btn-wa" data-parcours="TAPA Invest Femme" href="#">💬 WhatsApp — Parcours Femme</a>
+        </div>
+        <div class="format presentiel">
+          <span class="badge">À partir de janvier 2027</span>
+          <h3>Formation en présentiel</h3>
+          <p>À Abidjan, une session chaque fin de mois. Remplissez le formulaire ci-dessous : vous êtes inscrit(e) sur la liste d'attente et nous vous contactons sur WhatsApp pour confirmer votre présence.</p>
+          <a class="btn-form" href="#formulaire">📝 Je remplis le formulaire</a>
+        </div>
+      </div>
+      <p style="text-align:center; font-size:14px; color:#666; margin-top:22px;">Les tarifs sont sur la <a href="/#tarifs" style="color: var(--navy); font-weight:700;">page d'accueil</a>.</p>
+    </div>
+  </section>
+
+  <section id="formulaire">
+    <div class="wrap">
+      <h2 class="section-title" style="text-align:center;">Formation en présentiel — inscrivez-vous</h2>
+      <div class="formulaire">
+        <form id="form-parcours">
+          <label for="f-nom">Nom</label>
+          <input type="text" id="f-nom" required autocomplete="family-name">
+          <label for="f-prenom">Prénom</label>
+          <input type="text" id="f-prenom" required autocomplete="given-name">
+          <label for="f-whatsapp">Numéro WhatsApp</label>
+          <input type="tel" id="f-whatsapp" placeholder="Ex : 0504775774" required autocomplete="tel">
+          <label for="f-age">Votre tranche d'âge</label>
+          <select id="f-age" required>
+            <option value="">— Choisir —</option>
+            <option>Moins de 20 ans</option>
+            <option>20 à 30 ans</option>
+            <option>31 à 45 ans</option>
+            <option>46 ans et plus</option>
+          </select>
+          <label for="f-parcours">Quelle formation vous intéresse ?</label>
+          <select id="f-parcours" required>
+            <option value="">— Choisir —</option>
+            <option value="BRVM Starter Adultes">BRVM Starter Adultes</option>
+            <option value="BRVM Starter Jeunes">BRVM Starter Jeunes</option>
+            <option value="TAPA Invest Femme">TAPA Invest Femme</option>
+          </select>
+          <label for="f-objectif">Votre objectif principal</label>
+          <select id="f-objectif" required>
+            <option value="">— Choisir —</option>
+            <option>Mieux gérer mon budget</option>
+            <option>Épargner et sortir des dettes</option>
+            <option>Apprendre à investir</option>
+            <option>Construire mon autonomie financière</option>
+          </select>
+          <button type="submit">Je m'inscris sur la liste d'attente</button>
+          <div id="f-resultat"></div>
+        </form>
+        <p style="font-size:12px; color:#777; margin-top:14px; text-align:center;">Aucun paiement à cette étape. Vos informations servent uniquement à vous contacter.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="groupe" id="bloc-groupe" style="display:none;">
+    <div class="wrap">
+      <h2>En attendant, rejoignez notre groupe WhatsApp</h2>
+      <p>Conseils, actualités de la BRVM et informations sur les prochaines sessions.</p>
+      <a id="lien-groupe" href="#" target="_blank" rel="noopener">Rejoindre le groupe WhatsApp</a>
+    </div>
+  </div>
+
+  <footer>TAPA CONSEIL — L'éducation financière adaptée à votre réalité</footer>
+
+<script>
+  // Lien d'invitation du groupe WhatsApp : à renseigner ici. Tant qu'il est vide, le bloc reste caché.
+  const LIEN_GROUPE_WHATSAPP = '';
+  const NUMERO_WHATSAPP = '2250504775774';
+
+  if (LIEN_GROUPE_WHATSAPP) {
+    document.getElementById('lien-groupe').href = LIEN_GROUPE_WHATSAPP;
+    document.getElementById('bloc-groupe').style.display = 'block';
+  }
+
+  document.querySelectorAll('.btn-wa').forEach(a => {
+    const msg = `Bonjour, je souhaite suivre la formation en ligne TAPA CONSEIL — parcours : ${a.dataset.parcours}.`;
+    a.href = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+    a.target = '_blank'; a.rel = 'noopener';
+  });
+
+  // Pré-sélection du parcours depuis l'accueil (?parcours=adultes|jeunes|femme)
+  const NOMS = { adultes: 'BRVM Starter Adultes', jeunes: 'BRVM Starter Jeunes', femme: 'TAPA Invest Femme' };
+  const p = new URLSearchParams(location.search).get('parcours');
+  if (p && NOMS[p]) document.getElementById('f-parcours').value = NOMS[p];
+
+  document.getElementById('form-parcours').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const el = document.getElementById('f-resultat');
+    const bouton = e.target.querySelector('button');
+    bouton.disabled = true;
+    try {
+      const res = await fetch('/api/reservations-presentiel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom: document.getElementById('f-nom').value,
+          prenom: document.getElementById('f-prenom').value,
+          whatsapp: document.getElementById('f-whatsapp').value,
+          option: document.getElementById('f-parcours').value,
+          tranche_age: document.getElementById('f-age').value,
+          objectif: document.getElementById('f-objectif').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Une erreur est survenue.');
+      e.target.innerHTML = '<p style="color:#0B6E4F; font-weight:600; text-align:center; font-size:17px;">✅ Inscription enregistrée !<br><span style="font-weight:400; font-size:15px; color:#333;">On vous contacte bientôt sur WhatsApp pour confirmer votre présence.</span></p>'
+        + (LIEN_GROUPE_WHATSAPP ? `<p style="text-align:center; margin-top:16px; font-size:15px;">En attendant, <a href="${LIEN_GROUPE_WHATSAPP}" target="_blank" rel="noopener" style="color:#0B6E4F; font-weight:700;">rejoignez notre groupe WhatsApp</a>.</p>` : '');
+    } catch (err) {
+      el.innerHTML = `<p style="color:#C0392B; font-size:13px; margin-top:10px;">${err.message}</p>`;
+      bouton.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

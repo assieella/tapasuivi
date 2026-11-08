@@ -67,6 +67,17 @@
   .tarif-card.alt h3 { color: var(--navy); }
   .tarif-card .prix { font-family: Georgia, serif; font-size: 34px; font-weight: 700; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
   .tarif-card .detail-prix { font-size: 14px; opacity: 0.85; margin-bottom: 20px; }
+  .groupe-titre { text-align: center; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--navy); font-weight: 700; margin: 8px 0 18px; }
+  .groupe-titre.espace { margin-top: 44px; }
+  .bandeau-nouveau { text-align: center; margin-bottom: 26px; }
+  .bandeau-nouveau span { display: inline-block; background: var(--navy-deep); color: var(--gold-light); font-size: 13px; font-weight: 700; letter-spacing: 1px; padding: 8px 18px; border-radius: 30px; }
+  .tarif-card ul.inclus { list-style: none; padding: 0; margin: 0 0 18px; text-align: left; font-size: 14px; line-height: 1.6; }
+  .tarif-card ul.inclus li { padding-left: 22px; position: relative; margin-bottom: 4px; }
+  .tarif-card ul.inclus li::before { content: "✓"; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+  .tarif-card .periodes { margin: 6px 0 18px; font-size: 14px; }
+  .tarif-card .periodes div { display: flex; justify-content: space-between; border-top: 1px solid rgba(128,128,128,0.3); padding: 7px 0; }
+  .tarif-card .periodes div strong { font-variant-numeric: tabular-nums; }
+  .etiquette-offre { background: var(--gold); color: var(--navy-deep); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
 
   /* Espaces (navigation) : deux liens simples, pas des cartes en double du reste */
   .liens-espaces { display: flex; gap: 40px; flex-wrap: wrap; padding-top: 8px; }
@@ -117,6 +128,7 @@
     .rangee-article img { width: 100%; height: 160px; }
     .registre { font-size: 13px; }
   }
+  .flottant { position: fixed; right: 18px; bottom: 18px; z-index: 50; background: var(--gold); color: var(--navy-deep); font-weight: 700; text-decoration: none; padding: 14px 22px; border-radius: 40px; font-size: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
 </style>
 </head>
 <body>
@@ -129,8 +141,9 @@
       <h1>Vous voulez investir à la BRVM, mais vous ne savez pas par où commencer ?</h1>
       <p class="sub">Découvrez une méthode simple pour comprendre la Bourse, définir votre stratégie et commencer à construire votre portefeuille avec un accompagnement humain.</p>
       <div class="tagline">« L'Intelligence Financière Pour Tous »</div>
-      <div class="boutons" style="margin-top: 26px;">
-        <a class="cta" href="/inscription.html">Créer mon compte gratuit</a>
+      <div class="boutons" style="margin-top: 26px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+        <a class="cta" href="/parcours.html" style="font-size:18px; padding:17px 36px; box-shadow:0 4px 18px rgba(218,170,55,0.45);">🎓 Choisir mon parcours de formation</a>
+        <a class="cta-outline" href="/inscription.html">Créer mon compte gratuit</a>
       </div>
       <p style="color: #D9E2EF; font-size: 13px; margin-top: 12px;">1 minute, sans engagement — accède immédiatement à nos ressources.</p>
       <p style="margin-top: 22px;"><a href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20programme%20TAPA%20INVEST%20(BRVM%20Starter)." style="color: var(--gold-light); font-size: 14px; text-decoration: underline;">Déjà convaincu(e) ? Découvrez BRVM Starter, notre accompagnement complet →</a></p>
@@ -154,7 +167,7 @@
 
   <section>
     <div class="wrap">
-      <h2 class="section-title">Après 4 mois, vous saurez :</h2>
+      <h2 class="section-title">Après votre accompagnement, vous saurez :</h2>
       <div class="liste-a-puce">
         <div class="ligne"><span class="puce">—</span><div><h3>Comprendre la BRVM</h3><p>Son fonctionnement, ses acteurs, comment elle marche vraiment.</p></div></div>
         <div class="ligne"><span class="puce">—</span><div><h3>Lire une société cotée</h3><p>Reconnaître les informations importantes avant de vous décider.</p></div></div>
@@ -211,21 +224,9 @@
   <section style="background: var(--navy-deep); color: white;">
     <div class="wrap" style="max-width: 720px; text-align: center;">
       <h2 class="section-title" style="color: white;">La formation en présentiel revient en 2027</h2>
-      <p style="font-size: 16px; margin-bottom: 8px;">À partir de <strong>février 2027</strong>, une session en présentiel chaque <strong>fin de mois</strong>.</p>
-      <p style="font-size: 16px; margin-bottom: 24px;"><strong style="color: var(--gold-light);">45 000 FCFA</strong> — formation + <strong>4 mois d'accompagnement</strong> inclus.</p>
-      <div style="background: white; color: var(--navy); border-radius: 12px; padding: 28px; max-width: 420px; margin: 0 auto; text-align: left;">
-        <h3 style="margin-bottom: 16px; text-align: center;">Réservez votre place</h3>
-        <form id="form-reservation-presentiel">
-          <label>Nom</label>
-          <input type="text" id="resa-nom" required>
-          <label>Prénom</label>
-          <input type="text" id="resa-prenom" required>
-          <label>Numéro WhatsApp</label>
-          <input type="tel" id="resa-whatsapp" placeholder="Ex: 0504775774" required>
-          <button type="submit" style="margin-top: 12px;">Je réserve ma place</button>
-          <div id="resa-resultat"></div>
-        </form>
-      </div>
+      <p style="font-size: 16px; margin-bottom: 8px;">À partir de <strong>janvier 2027</strong>, une session en présentiel chaque <strong>fin de mois</strong>.</p>
+      <p style="font-size: 16px; margin-bottom: 24px;"><strong style="color: var(--gold-light);">45 000 FCFA</strong> — formation théorique et pratique + <strong>3 mois d'accompagnement</strong> jusqu'à l'achat de vos premières actions.</p>
+      <a class="cta" href="/parcours.html#formulaire">Je m'inscris sur la liste d'attente</a>
       <p style="font-size: 13px; color: #D9E2EF; margin-top: 16px;">Aucun paiement à cette étape — on vous contacte directement sur WhatsApp pour confirmer votre place.</p>
     </div>
   </section>
@@ -250,6 +251,7 @@
   <section id="tarifs" style="background: var(--cream);">
     <div class="wrap">
       <h2 class="section-title">Choisissez votre formule</h2>
+      <div id="tarifs-2026">
       <div class="tarifs">
         <div class="tarif-card">
           <div style="background: var(--gold); color: var(--navy-deep); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 10px;">⭐ FORMULE RECOMMANDÉE</div>
@@ -271,6 +273,95 @@
           <div class="detail-prix">Vous avez déjà une formation en bourse ? Gardez juste l'essentiel : suivi de portefeuille, objectif, outils et accès à votre conseillère — sans repasser par la formation.</div>
           <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20j'ai%20d%C3%A9j%C3%A0%20une%20formation%20en%20bourse%20et%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20Suivi%20seul%20%C3%A0%2014%20000%20FCFA." style="padding:12px 26px; font-size:15px;">Choisir cette formule</a>
         </div>
+      </div>
+      </div>
+
+      <div id="tarifs-2027" style="display:none;">
+        <div class="bandeau-nouveau"><span>NOUVELLES FORMULES — DEPUIS LE 1ER JANVIER 2027</span></div>
+
+        <div class="groupe-titre">1 · Se former — paiement unique</div>
+        <div class="tarifs" style="max-width: 900px; margin: 0 auto; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+          <div class="tarif-card">
+            <div class="etiquette-offre">⭐ FORMULE RECOMMANDÉE</div>
+            <h3>Formation en présentiel</h3>
+            <div class="prix">45 000 FCFA</div>
+            <div class="detail-prix">Une session chaque fin de mois, à Abidjan</div>
+            <ul class="inclus">
+              <li>Formation théorique et pratique</li>
+              <li>3 mois d'accompagnement, jusqu'à l'achat de vos premières actions</li>
+              <li>Accès à la plateforme pendant l'accompagnement</li>
+            </ul>
+            <a class="cta" href="/parcours.html?parcours=adultes#formulaire" style="padding:12px 26px; font-size:15px;">Je m'inscris</a>
+          </div>
+          <div class="tarif-card alt">
+            <h3>Formation en ligne</h3>
+            <div class="prix">75 000 FCFA</div>
+            <div class="detail-prix">Depuis l'étranger ou depuis chez vous</div>
+            <ul class="inclus">
+              <li>Formation théorique et pratique à distance</li>
+              <li>3 mois d'accompagnement, jusqu'à l'achat de vos premières actions</li>
+              <li>Idéal pour la diaspora</li>
+            </ul>
+            <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20voudrais%20m'inscrire%20%C3%A0%20la%20formation%20en%20ligne%20TAPA%20INVEST%20(75%20000%20FCFA)." style="padding:12px 26px; font-size:15px;">Je m'inscris</a>
+          </div>
+          <div class="tarif-card alt">
+            <h3>Séance femmes</h3>
+            <div class="prix" style="font-size:20px;">Tarif communiqué à l'inscription</div>
+            <div class="detail-prix">Séance en présentiel, une fois par mois</div>
+            <ul class="inclus">
+              <li>Éducation financière entre femmes</li>
+              <li>Pour comprendre comment commencer à investir</li>
+            </ul>
+            <a class="cta" href="/parcours.html?parcours=femme#formulaire" style="padding:12px 26px; font-size:15px;">Rejoindre la liste d'attente</a>
+          </div>
+          <div class="tarif-card alt">
+            <h3>Séance jeunes 20-30 ans</h3>
+            <div class="prix" style="font-size:20px;">Tarif communiqué à l'inscription</div>
+            <div class="detail-prix">Séance en présentiel, une fois par mois</div>
+            <ul class="inclus">
+              <li>Les bases de la Bourse pour bien démarrer</li>
+              <li>Pensée pour les 20-30 ans</li>
+            </ul>
+            <a class="cta" href="/parcours.html?parcours=jeunes#formulaire" style="padding:12px 26px; font-size:15px;">Rejoindre la liste d'attente</a>
+          </div>
+        </div>
+
+        <div class="groupe-titre espace">2 · Être suivi(e) — abonnement</div>
+        <div class="tarifs" style="max-width: 760px; margin: 0 auto;">
+          <div class="tarif-card alt">
+            <h3>Suivi Essentiel</h3>
+            <div class="prix">15 000 FCFA<span style="font-size:15px; font-weight:400;"> / mois</span></div>
+            <div class="periodes">
+              <div><span>Au semestre</span><strong>85 000 FCFA</strong></div>
+              <div><span>À l'année</span><strong>150 000 FCFA</strong></div>
+            </div>
+            <ul class="inclus">
+              <li>Suivi de votre portefeuille et diagnostic</li>
+              <li>Études de titres et outils d'analyse</li>
+              <li>Analyse mensuelle de votre portefeuille</li>
+              <li>2 séances de coaching de groupe par mois (Zoom, 1 h 30)</li>
+            </ul>
+            <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20voudrais%20souscrire%20au%20Suivi%20Essentiel%20TAPA%20INVEST." style="padding:12px 26px; font-size:15px;">Choisir l'Essentiel</a>
+          </div>
+          <div class="tarif-card">
+            <div class="etiquette-offre">LE PLUS COMPLET</div>
+            <h3>Suivi Premium</h3>
+            <div class="prix">40 000 FCFA<span style="font-size:15px; font-weight:400;"> / mois</span></div>
+            <div class="periodes">
+              <div><span>Au semestre</span><strong>220 000 FCFA</strong></div>
+              <div><span>À l'année</span><strong>400 000 FCFA</strong></div>
+            </div>
+            <ul class="inclus">
+              <li>Tout le Suivi Essentiel</li>
+              <li>1 appel individuel par mois avec votre conseillère</li>
+              <li>Études de titres sur demande</li>
+            </ul>
+            <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20voudrais%20souscrire%20au%20Suivi%20Premium%20TAPA%20INVEST." style="padding:12px 26px; font-size:15px;">Choisir le Premium</a>
+          </div>
+        </div>
+        <p style="text-align:center; font-size:14px; color:#555; margin-top:26px;">Entreprises, associations, groupes : formation et accompagnement <strong>sur devis</strong> — <a href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20souhaite%20un%20devis%20de%20formation%20TAPA%20INVEST%20pour%20mon%20entreprise%20ou%20mon%20groupe." style="color: var(--navy); font-weight:700;">Nous contacter</a></p>
+
+        <div style="text-align:center; margin-top:36px;"><a class="cta" href="/parcours.html">🎓 Choisir mon parcours de formation</a></div>
       </div>
     </div>
   </section>
@@ -306,7 +397,7 @@
     <div class="wrap">
       <h2 class="section-title" style="color:white;">Prêt(e) à comprendre la BRVM avant d'investir ?</h2>
       <div class="boutons">
-        <a class="cta" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20programme%20TAPA%20INVEST%20(BRVM%20Starter).">Commencer BRVM Starter — 40 000 FCFA</a>
+        <a class="cta" id="cta-final-tarif" href="https://wa.me/2250504775774?text=Bonjour%2C%20je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20le%20programme%20TAPA%20INVEST%20(BRVM%20Starter).">Commencer BRVM Starter — 40 000 FCFA</a>
         <a class="cta-outline" href="/inscription.html">Créer mon compte gratuit</a>
       </div>
       <p style="color:#D9E2EF; margin-top:20px;">💬 Vous hésitez encore ? <a href="https://wa.me/2250504775774?text=Bonjour%2C%20j'ai%20une%20question%20avant%20de%20m'inscrire." style="color:var(--gold-light);">Parlons-en sur WhatsApp</a></p>
@@ -322,6 +413,25 @@
 
   <script src="/js/api.js"></script>
   <script>
+    // Nouvelle grille tarifaire : s'affiche automatiquement à partir du 1er janvier 2027 (heure d'Abidjan = UTC).
+    // On lit la date du SERVEUR (en-tête HTTP « Date ») pour ne pas dépendre de l'horloge du téléphone du visiteur.
+    (async function basculerTarifs() {
+      const DEBUT_NOUVEAUX_TARIFS = Date.UTC(2027, 0, 1);
+      let maintenant = Date.now();
+      try {
+        const r = await fetch('/favicon.png', { method: 'HEAD', cache: 'no-store' });
+        const d = r.headers.get('Date');
+        const t = d ? new Date(d).getTime() : NaN;
+        if (!Number.isNaN(t)) maintenant = t;
+      } catch (e) { /* on garde l'horloge locale */ }
+      if (maintenant < DEBUT_NOUVEAUX_TARIFS) return;
+      const anciens = document.getElementById('tarifs-2026');
+      const nouveaux = document.getElementById('tarifs-2027');
+      if (anciens && nouveaux) { anciens.style.display = 'none'; nouveaux.style.display = 'block'; }
+      const cta = document.getElementById('cta-final-tarif');
+      if (cta) { cta.textContent = 'Découvrir nos formules'; cta.setAttribute('href', '#tarifs'); }
+    })();
+
     document.getElementById('form-reservation-presentiel')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const el = document.getElementById('resa-resultat');
@@ -357,5 +467,6 @@
 
   </script>
 
+<a class="flottant" href="/parcours.html">🎓 Choisir mon parcours</a>
 </body>
 </html>
