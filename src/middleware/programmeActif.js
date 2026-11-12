@@ -8,7 +8,7 @@ const { computeProgrammeStatus } = require('../services/programme');
 async function requireProgrammeActif(req, res, next) {
   if (req.user.role !== 'client') return next();
 
-  const result = await pool.query('SELECT created_at, programme, contrat_signe_le FROM users WHERE id = $1', [req.user.id]);
+  const result = await pool.query('SELECT created_at, programme, contrat_signe_le, acces_jusqu_au FROM users WHERE id = $1', [req.user.id]);
   const user = result.rows[0];
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
 

@@ -19,14 +19,15 @@ function joursEntre(dateA, dateB) {
   const MS_PAR_JOUR = 1000 * 60 * 60 * 24;
   return Math.ceil((dateA.getTime() - dateB.getTime()) / MS_PAR_JOUR);
 }
-function computeProgrammeStatus({ created_at, programme }) {
+function computeProgrammeStatus({ created_at, programme, acces_jusqu_au }) {
   // Un compte gratuit n'a pas de durée limitée — accès permanent aux outils gratuits.
   if (programme === 'gratuit') {
     return { mois: null, date_debut: new Date(created_at).toISOString(), date_fin: null, jours_restants: null, pourcentage: null, termine: false, alerte_fin_proche: false };
   }
-  const mois = moisDuProgramme(programme);
   const date_debut = new Date(created_at);
-  const date_fin = ajouterMois(date_debut, mois);
+  // Après un renouvellement, la date de fin est celle enregistrée (acces_jusqu_au) ; sinon, durée initiale du programme.
+  const date_fin = acces_jusqu_au ? new Date(acces_jusqu_au) : ajouterMois(date_debut, moisDuProgramme(programme));
+  const mois = acces_jusqu_au ? Math.max(1, Math.round(joursEntre(date_fin, date_debut) / 30.44)) : moisDuProgramme(programme);
   const maintenant = new Date();
   const duree_totale_jours = joursEntre(date_fin, date_debut);
   const jours_ecoules = joursEntre(maintenant, date_debut);

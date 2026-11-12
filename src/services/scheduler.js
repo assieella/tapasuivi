@@ -102,7 +102,7 @@ async function envoyerRappelsAppelMensuel() {
     );
     if (!appels.rows.length) return;
 
-    const clients = await pool.query(`SELECT id, full_name, email, created_at, programme FROM users WHERE role = 'client' AND programme != 'gratuit'`);
+    const clients = await pool.query(`SELECT id, full_name, email, created_at, programme, acces_jusqu_au FROM users WHERE role = 'client' AND programme != 'gratuit'`);
 
     for (const appel of appels.rows) {
       const heureAppel = new Date(appel.date_appel).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' });
@@ -129,7 +129,7 @@ async function envoyerRappelsAppelMensuel() {
 async function envoyerBilansFinProgramme() {
   try {
     const clients = await pool.query(`
-      SELECT u.id, u.full_name, u.prenom, u.email, u.created_at, u.programme
+      SELECT u.id, u.full_name, u.prenom, u.email, u.created_at, u.programme, u.acces_jusqu_au
       FROM users u
       LEFT JOIN bilans_envoyes b ON b.user_id = u.id
       WHERE u.role = 'client' AND u.programme != 'gratuit' AND b.user_id IS NULL
@@ -175,7 +175,7 @@ async function genererAnalysesPortefeuilleMensuelles() {
   const moisCourant = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1).toISOString().slice(0, 10);
 
   try {
-    const clients = await pool.query(`SELECT id, full_name, prenom, created_at, programme FROM users WHERE role = 'client' AND programme != 'gratuit'`);
+    const clients = await pool.query(`SELECT id, full_name, prenom, created_at, programme, acces_jusqu_au FROM users WHERE role = 'client' AND programme != 'gratuit'`);
 
     for (const client of clients.rows) {
       const statut = computeProgrammeStatus(client);

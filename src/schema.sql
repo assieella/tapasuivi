@@ -417,9 +417,20 @@ CREATE TABLE IF NOT EXISTS reservations_presentiel (
   contactee BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+-- Renouvellement d'accès : date jusqu'à laquelle le client a accès (NULL = durée initiale du programme)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS acces_jusqu_au TIMESTAMP;
+CREATE TABLE IF NOT EXISTS renouvellements (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mois INTEGER NOT NULL,
+  ancienne_fin TIMESTAMP,
+  nouvelle_fin TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
 -- Option choisie (séance femmes, séance jeunes, formation...) — liste d'attente
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS option_choisie TEXT;
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS tranche_age TEXT;
+ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS format_choisi TEXT;
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS objectif TEXT;
 
 -- Test TAPA "Suis-je prête à investir ?" — outil de génération de leads, accessible sans

@@ -8,7 +8,7 @@ const LABELS_FORMULE = { '4_mois': 'BRVM Starter — 4 mois', '12_mois': 'BRVM S
 
 // Infos du contrat pré-remplies avec les vraies données du client — jamais de champ vide à deviner.
 router.get('/', requireAuth, async (req, res) => {
-  const result = await pool.query('SELECT full_name, prenom, nom, programme, created_at, contrat_signe_le FROM users WHERE id = $1', [req.user.id]);
+  const result = await pool.query('SELECT full_name, prenom, nom, programme, created_at, contrat_signe_le, acces_jusqu_au FROM users WHERE id = $1', [req.user.id]);
   const user = result.rows[0];
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
 

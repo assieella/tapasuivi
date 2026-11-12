@@ -106,26 +106,23 @@
       <div class="formats">
         <div class="format ligne">
           <span class="badge">Disponible immédiatement</span>
-          <h3>Formation en ligne</h3>
-          <p>Où que vous soyez, en Côte d'Ivoire ou à l'étranger. Écrivez-nous directement sur WhatsApp : nous vous indiquons comment démarrer tout de suite.</p>
-          <a class="btn-wa" data-parcours="BRVM Starter Adultes" href="#">💬 WhatsApp — Parcours Adultes</a>
-          <a class="btn-wa" data-parcours="BRVM Starter Jeunes" href="#">💬 WhatsApp — Parcours Jeunes</a>
-          <a class="btn-wa" data-parcours="TAPA Invest Femme" href="#">💬 WhatsApp — Parcours Femme</a>
-        </div>
+          <h3>Formation en ligne — BRVM Starter Adultes</h3>
+          <p>Où que vous soyez. Découvrez le détail de l'offre et inscrivez-vous directement, avec règlement en ligne.</p>
+          <a class="btn-wa" href="/offres.html#brvm-starter-en-ligne">Voir l'offre et m'inscrire</a>
+          </div>
         <div class="format presentiel">
           <span class="badge">À partir de janvier 2027</span>
           <h3>Formation en présentiel</h3>
-          <p>À Abidjan, une session chaque fin de mois. Remplissez le formulaire ci-dessous : vous êtes inscrit(e) sur la liste d'attente et nous vous contactons sur WhatsApp pour confirmer votre présence.</p>
-          <a class="btn-form" href="#formulaire">📝 Je remplis le formulaire</a>
+          <p>À Abidjan, une session chaque fin de mois. C'est le format de <strong>BRVM Starter Jeunes</strong> et de <strong>TAPA Invest Femme</strong>, exclusivement en présentiel sauf conditions particulières. Remplissez le formulaire ci-dessous : vous êtes inscrit(e) sur la liste d'attente et nous vous contactons sur WhatsApp pour confirmer votre présence.</p>
         </div>
       </div>
-      <p style="text-align:center; font-size:14px; color:#666; margin-top:22px;">Les tarifs sont sur la <a href="/#tarifs" style="color: var(--navy); font-weight:700;">page d'accueil</a>.</p>
+      <p style="text-align:center; font-size:14px; color:#666; margin-top:22px;">Détails et tarifs sur la page <a href="/offres.html" style="color: var(--navy); font-weight:700;">Notre offre</a>.</p>
     </div>
   </section>
 
   <section id="formulaire">
     <div class="wrap">
-      <h2 class="section-title" style="text-align:center;">Formation en présentiel — inscrivez-vous</h2>
+      <h2 class="section-title" style="text-align:center;">Inscrivez-vous</h2>
       <div class="formulaire">
         <form id="form-parcours">
           <label for="f-nom">Nom</label>
@@ -134,6 +131,12 @@
           <input type="text" id="f-prenom" required autocomplete="given-name">
           <label for="f-whatsapp">Numéro WhatsApp</label>
           <input type="tel" id="f-whatsapp" placeholder="Ex : 0504775774" required autocomplete="tel">
+          <label for="f-format">Format au choix</label>
+          <select id="f-format" required>
+            <option value="">— Choisir —</option>
+            <option value="En ligne">En ligne</option>
+            <option value="En présentiel">En présentiel</option>
+          </select>
           <label for="f-age">Votre tranche d'âge</label>
           <select id="f-age" required>
             <option value="">— Choisir —</option>
@@ -177,7 +180,7 @@
 
 <script>
   // Lien d'invitation du groupe WhatsApp : à renseigner ici. Tant qu'il est vide, le bloc reste caché.
-  const LIEN_GROUPE_WHATSAPP = '';
+  const LIEN_GROUPE_WHATSAPP = 'https://chat.whatsapp.com/K8mPkSPJ5FdBAixuhw5zwS';
   const NUMERO_WHATSAPP = '2250504775774';
 
   if (LIEN_GROUPE_WHATSAPP) {
@@ -185,11 +188,6 @@
     document.getElementById('bloc-groupe').style.display = 'block';
   }
 
-  document.querySelectorAll('.btn-wa').forEach(a => {
-    const msg = `Bonjour, je souhaite suivre la formation en ligne TAPA CONSEIL — parcours : ${a.dataset.parcours}.`;
-    a.href = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(msg)}`;
-    a.target = '_blank'; a.rel = 'noopener';
-  });
 
   // Pré-sélection du parcours depuis l'accueil (?parcours=adultes|jeunes|femme)
   const NOMS = { adultes: 'BRVM Starter Adultes', jeunes: 'BRVM Starter Jeunes', femme: 'TAPA Invest Femme' };
@@ -210,6 +208,7 @@
           prenom: document.getElementById('f-prenom').value,
           whatsapp: document.getElementById('f-whatsapp').value,
           option: document.getElementById('f-parcours').value,
+          format: document.getElementById('f-format').value,
           tranche_age: document.getElementById('f-age').value,
           objectif: document.getElementById('f-objectif').value
         })

@@ -20,6 +20,7 @@
   <div class="topbar"><div class="brand"><img src="/images/logo.png" alt="TAPA CONSEIL"><span class="brand-text">Fiche client</span></div><a href="/admin.html">← Tous les clients</a></div>
   <div class="container" style="max-width: 760px;">
     <div class="card" id="identite-content"><p>Chargement...</p></div>
+    <div class="card" id="acces-content" style="display:none;"></div>
     <div class="card" id="profil-content"></div>
     <div class="card" id="plan-content"></div>
     <div class="card" id="portefeuille-content"><h2>Portefeuille</h2><p>Chargement...</p></div>
@@ -228,12 +229,39 @@
       } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
     }
 
+    function afficherAcces(client, statut) {
+      const el = document.getElementById('acces-content');
+      if (!statut || client.programme === 'gratuit') return;
+      const fin = new Date(statut.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+      const etat = statut.termine
+        ? `<span style="color:#C0392B; font-weight:600;">⛔ Accès terminé depuis le ${fin}</span> — le client ne voit plus ses contenus.`
+        : `<span style="color:#0B6E4F; font-weight:600;">✅ Accès actif jusqu'au ${fin}</span> (${statut.jours_restants} jour${statut.jours_restants > 1 ? 's' : ''} restant${statut.jours_restants > 1 ? 's' : ''}).`;
+      el.style.display = 'block';
+      el.innerHTML = `<h2>Accès et renouvellement</h2><p>${etat}</p>
+        <p style="font-size:13px; color:#666;">Après le règlement du renouvellement, choisis la période : l'accès se rouvre immédiatement. ${statut.termine ? 'La nouvelle période démarre aujourd\'hui.' : 'La nouvelle période s\'ajoute à la fin de la période en cours.'}</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <select id="renouv-mois" style="width:auto;"><option value="1">1 mois</option><option value="6">6 mois</option><option value="12">12 mois</option></select>
+          <button onclick="renouveler()" style="width:auto; padding:8px 18px;">🔄 Renouveler</button>
+        </div><div id="resultat-renouv"></div>`;
+    }
+    async function renouveler() {
+      const mois = document.getElementById('renouv-mois').value;
+      if (!confirm(`Renouveler l'accès de ce client pour ${mois} mois ? (à faire une fois le règlement reçu)`)) return;
+      const el = document.getElementById('resultat-renouv');
+      try {
+        const r = await apiCall(`/api/admin/clients/${clientId}/renouveler`, { method: 'POST', body: JSON.stringify({ mois: Number(mois) }) });
+        el.innerHTML = `<p class="success">✅ Accès renouvelé jusqu'au ${new Date(r.nouvelle_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>`;
+        setTimeout(() => location.reload(), 1500);
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
     (async () => {
       const user = await requireAdminLogin(); if (!user) return;
       if (user.role !== 'admin') { document.querySelector('.container').innerHTML = '<div class="card"><p class="error">Accès réservé à l\'administrateur.</p></div>'; return; }
       if (!clientId) { document.getElementById('identite-content').innerHTML = '<p class="error">Aucun client spécifié.</p>'; return; }
       try {
-        const { client, profiles, plans } = await apiCall(`/api/admin/clients/${clientId}`);
+        const { client, statut, profiles, plans } = await apiCall(`/api/admin/clients/${clientId}`);
+        afficherAcces(client, statut);
         function libelleProgramme(programme) {
           if (programme === 'gratuit') return 'Compte gratuit';
           const correspondance = String(programme).match(/(\d+)_mois$/);

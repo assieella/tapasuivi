@@ -96,12 +96,34 @@ router.get('/comptes-gratuits', requireAdminAuth, async (req, res) => {
 
 router.get('/clients/:id', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
-  const user = await pool.query('SELECT id, full_name, email, phone, programme, created_at FROM users WHERE id = $1', [id]);
+  const user = await pool.query('SELECT id, full_name, email, phone, programme, created_at, acces_jusqu_au FROM users WHERE id = $1', [id]);
   if (!user.rows.length) return res.status(404).json({ error: 'Client introuvable.' });
+  const { computeProgrammeStatus } = require('../services/programme');
+  const statut = user.rows[0].programme === 'gratuit' ? null : computeProgrammeStatus(user.rows[0]);
   const profiles = await pool.query('SELECT * FROM investor_profiles WHERE user_id = $1 ORDER BY created_at DESC', [id]);
   const plans = await pool.query('SELECT * FROM investment_plans WHERE user_id = $1 ORDER BY created_at DESC', [id]);
   const portfolios = await pool.query('SELECT * FROM portfolio_snapshots WHERE user_id = $1 ORDER BY mois DESC', [id]);
-  res.json({ client: user.rows[0], profiles: profiles.rows, plans: plans.rows, portfolios: portfolios.rows });
+  res.json({ client: user.rows[0], statut, profiles: profiles.rows, plans: plans.rows, portfolios: portfolios.rows });
+});
+
+// Renouvelle l'accès d'un client payant pour 1, 6 ou 12 mois. Si l'accès est encore actif, la
+// nouvelle période s'ajoute à la fin de la période en cours (aucun jour perdu) ; s'il est déjà
+// terminé, elle démarre aujourd'hui.
+router.post('/clients/:id/renouveler', requireAdminAuth, async (req, res) => {
+  const mois = Number(req.body.mois);
+  if (![1, 6, 12].includes(mois)) return res.status(400).json({ error: 'Durée de renouvellement invalide (1, 6 ou 12 mois).' });
+  const { computeProgrammeStatus, ajouterMois } = require('../services/programme');
+  const r = await pool.query('SELECT id, role, programme, created_at, acces_jusqu_au FROM users WHERE id = $1', [req.params.id]);
+  const u = r.rows[0];
+  if (!u || u.role !== 'client') return res.status(404).json({ error: 'Client introuvable.' });
+  if (u.programme === 'gratuit') return res.status(400).json({ error: "Ce compte est gratuit : il n'a pas d'accès à renouveler." });
+  const statut = computeProgrammeStatus(u);
+  const ancienneFin = new Date(statut.date_fin);
+  const base = statut.termine ? new Date() : ancienneFin;
+  const nouvelleFin = ajouterMois(base, mois);
+  await pool.query('UPDATE users SET acces_jusqu_au = $1 WHERE id = $2', [nouvelleFin, u.id]);
+  await pool.query('INSERT INTO renouvellements (user_id, mois, ancienne_fin, nouvelle_fin) VALUES ($1, $2, $3, $4)', [u.id, mois, ancienneFin, nouvelleFin]);
+  res.json({ ok: true, ancienne_fin: ancienneFin.toISOString(), nouvelle_fin: nouvelleFin.toISOString() });
 });
 
 router.get('/clients/:id/messages', requireAdminAuth, async (req, res) => {

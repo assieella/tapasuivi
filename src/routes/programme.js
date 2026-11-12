@@ -9,7 +9,7 @@ const TITRE_RAPPEL = "Investir sur la BRVM — TAPA CONSEIL";
 const DESCRIPTION_RAPPEL = "Rappel mensuel : c'est le moment de faire votre versement et de revoir votre portefeuille BRVM avec TAPA CONSEIL.";
 
 router.get('/status', requireAuth, async (req, res) => {
-  const result = await pool.query('SELECT created_at, programme, email_confirme FROM users WHERE id = $1', [req.user.id]);
+  const result = await pool.query('SELECT created_at, programme, email_confirme, acces_jusqu_au FROM users WHERE id = $1', [req.user.id]);
   const user = result.rows[0];
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
   const statut = computeProgrammeStatus(user);
@@ -25,7 +25,7 @@ router.get('/prochain-appel', requireAuth, async (req, res) => {
 });
 
 router.get('/rappel.ics', requireAuth, async (req, res) => {
-  const result = await pool.query('SELECT created_at, programme FROM users WHERE id = $1', [req.user.id]);
+  const result = await pool.query('SELECT created_at, programme, acces_jusqu_au FROM users WHERE id = $1', [req.user.id]);
   const user = result.rows[0];
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
   const statut = computeProgrammeStatus(user);

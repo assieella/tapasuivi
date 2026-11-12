@@ -29,6 +29,7 @@
           <span class="titre-nom">
             <strong>${r.prenom} ${r.nom}</strong> — <a href="https://wa.me/${r.whatsapp.replace(/\D/g, '')}" target="_blank">${r.whatsapp}</a>
             <br><span style="font-size:13px; color:#0A1B3D; font-weight:600;">${r.option_choisie || 'Formation en présentiel'}</span>
+            <span style="font-size:13px; font-weight:600; color:#0F2F59;"> · ${r.format_choisi || 'format non précisé'}</span>
             <span style="font-size:12px; color:#666;"> · ${r.tranche_age || 'âge non renseigné'} · ${r.objectif || 'objectif non renseigné'}</span>
             <br><span style="font-size:12px; color:#888;">Inscrit(e) le ${new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </span>
