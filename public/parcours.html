@@ -123,6 +123,7 @@
             <li>Je connais le processus pour ouvrir un compte-titres.</li>
             <li>Je connais certains titres et je peux les comparer.</li>
             <li>Je sais passer un ordre de Bourse.</li>
+            <li>Je peux choisir une stratégie adaptée à mes objectifs.</li>
             <li>Je peux investir en toute confiance, car je ne suis plus seul(e).</li>
           </ul>
           <h3 style="margin-top:12px;">Avec la formation</h3>
@@ -140,7 +141,28 @@
           <label for="f-prenom">Prénom</label>
           <input type="text" id="f-prenom" required autocomplete="given-name">
           <label for="f-whatsapp">Numéro WhatsApp</label>
-          <input type="tel" id="f-whatsapp" placeholder="Ex : 0504775774" required autocomplete="tel">
+          <div style="display:flex; gap:8px;">
+            <select id="f-indicatif" style="width:130px; flex-shrink:0;" aria-label="Indicatif du pays">
+              <option value="+225">🇨🇮 +225</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+1">🇨🇦 +1</option>
+              <option value="+221">🇸🇳 +221</option>
+              <option value="+223">🇲🇱 +223</option>
+              <option value="+226">🇧🇫 +226</option>
+              <option value="+227">🇳🇪 +227</option>
+              <option value="+228">🇹🇬 +228</option>
+              <option value="+229">🇧🇯 +229</option>
+              <option value="+224">🇬🇳 +224</option>
+              <option value="+237">🇨🇲 +237</option>
+              <option value="+241">🇬🇦 +241</option>
+              <option value="+32">🇧🇪 +32</option>
+              <option value="+41">🇨🇭 +41</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+212">🇲🇦 +212</option>
+              <option value="">Autre</option>
+            </select>
+            <input type="tel" id="f-whatsapp" placeholder="Ex : 0504775774" required autocomplete="tel-national">
+          </div>
           <label for="f-format">Format au choix</label>
           <select id="f-format" required>
             <option value="">— Choisir —</option>
@@ -179,15 +201,9 @@
             <option value="BRVM Starter Jeunes">BRVM Starter Jeunes</option>
             <option value="TAPA Invest Femme">TAPA Invest Femme</option>
           </select>
-          <label for="f-objectif">Votre objectif principal</label>
-          <select id="f-objectif" required>
-            <option value="">— Choisir —</option>
-            <option>Mieux gérer mon budget</option>
-            <option>Épargner et sortir des dettes</option>
-            <option>Apprendre à investir</option>
-            <option>Construire mon autonomie financière</option>
-          </select>
-          <label class="coche"><input type="checkbox" id="f-commercial"><span>Je préfère être recontacté(e) par un(e) commercial(e).</span></label>
+          <label for="f-objectif">Qu'attendez-vous de cette formation ?</label>
+          <input type="text" id="f-objectif" maxlength="150" placeholder="Réponse très courte" required>
+          <label class="coche"><input type="checkbox" id="f-commercial"><span>J'accepte d'être contacté(e) par un(e) commercial(e) de TAPA CONSEIL.</span></label>
           <p id="note-jeunes" style="display:none; font-size:13px; color:#777; margin-top:12px;">Un justificatif de la tranche d'âge (18 à 25 ans) sera demandé à l'inscription.</p>
           <button type="submit">Envoyer mon inscription</button>
           <div id="f-resultat"></div>
@@ -247,7 +263,7 @@
         body: JSON.stringify({
           nom: document.getElementById('f-nom').value,
           prenom: document.getElementById('f-prenom').value,
-          whatsapp: document.getElementById('f-whatsapp').value,
+          whatsapp: (document.getElementById('f-indicatif').value + ' ' + document.getElementById('f-whatsapp').value.trim()).trim(),
           option: document.getElementById('f-parcours').value,
           format: document.getElementById('f-format').value,
           mois: document.getElementById('f-mois').value,

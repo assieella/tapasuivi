@@ -8,11 +8,10 @@ router.post('/', async (req, res) => {
   const { nom, prenom, whatsapp } = req.body;
   const OPTIONS = ['BRVM Starter Adultes', 'BRVM Starter Jeunes', 'TAPA Invest Femme', 'Formation en présentiel', 'Formation en ligne', 'Séance femmes', 'Séance jeunes 20-30 ans'];
   const TRANCHES = ['Moins de 18 ans', '18 à 25 ans', '26 à 45 ans', '46 ans et plus', 'Moins de 20 ans', '20 à 30 ans', '31 à 45 ans'];
-  const OBJECTIFS = ['Mieux gérer mon budget', 'Épargner et sortir des dettes', 'Apprendre à investir', 'Construire mon autonomie financière'];
   const FORMATS = ['En ligne', 'En présentiel'];
   const format = FORMATS.includes(req.body.format) ? req.body.format : null;
   const tranche = TRANCHES.includes(req.body.tranche_age) ? req.body.tranche_age : null;
-  const objectif = OBJECTIFS.includes(req.body.objectif) ? req.body.objectif : null;
+  const objectif = typeof req.body.objectif === 'string' && req.body.objectif.trim() ? req.body.objectif.trim().slice(0, 200) : null;
   const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre','Je ne sais pas encore'];
   const mois = MOIS.includes(req.body.mois) ? req.body.mois : null;
   const contactCommercial = req.body.contact_commercial === true;
@@ -31,7 +30,7 @@ router.post('/', async (req, res) => {
     await sendMail({
       to: 'contact@tapaconseilagence.com',
       subject: `Nouvelle inscription — ${option}`,
-      html: `<p>${prenom.trim()} ${nom.trim()} vient de s'inscrire sur la liste d'attente : <strong>${option}</strong>.</p><p>WhatsApp : ${whatsapp.trim()}</p><p>Format : ${format || '—'}<br>Mois souhaité : ${mois || '—'}<br>Tranche d'âge : ${tranche || '—'}<br>Objectif : ${objectif || '—'}</p>${contactCommercial ? '<p><strong>📞 Souhaite être recontacté(e) par un(e) commercial(e).</strong></p>' : ''}`
+      html: `<p>${prenom.trim()} ${nom.trim()} vient de s'inscrire sur la liste d'attente : <strong>${option}</strong>.</p><p>WhatsApp : ${whatsapp.trim()}</p><p>Format : ${format || '—'}<br>Mois souhaité : ${mois || '—'}<br>Tranche d'âge : ${tranche || '—'}<br>Attentes : ${objectif || '—'}</p>${contactCommercial ? '<p><strong>📞 Souhaite être recontacté(e) par un(e) commercial(e).</strong></p>' : ''}`
     });
   } catch (e) { console.error('Échec de la notification de réservation présentiel :', e.message); }
 
