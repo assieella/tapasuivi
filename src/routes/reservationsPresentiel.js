@@ -6,7 +6,7 @@ const router = express.Router();
 // sur la page d'accueil, pas un espace client.
 router.post('/', async (req, res) => {
   const { nom, prenom, whatsapp } = req.body;
-  const OPTIONS = ['BRVM Starter Adultes', 'BRVM Starter Jeunes', 'TAPA Invest Femme', 'Formation en présentiel', 'Formation en ligne', 'Séance femmes', 'Séance jeunes 20-30 ans'];
+  const OPTIONS = ['TAPA Invest Adultes', 'TAPA Invest Jeunes', 'BRVM Starter Adultes', 'BRVM Starter Jeunes', 'TAPA Invest Femme', 'Formation en présentiel', 'Formation en ligne', 'Séance femmes', 'Séance jeunes 20-30 ans'];
   const TRANCHES = ['Moins de 18 ans', '18 à 25 ans', '26 à 45 ans', '46 ans et plus', 'Moins de 20 ans', '20 à 30 ans', '31 à 45 ans'];
   const FORMATS = ['En ligne', 'En présentiel'];
   const format = FORMATS.includes(req.body.format) ? req.body.format : null;

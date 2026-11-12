@@ -29,7 +29,7 @@
   .parcours .carte .exemple { font-size: 14px; color: #666; margin-top: 12px; }
   .btn-carte { display: block; text-align: center; background: var(--gold); color: var(--navy-deep); text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 40px; font-size: 15px; margin-top: 18px; border: none; cursor: pointer; font-family: inherit; }
   .formule { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--rule); margin-top: 16px; padding-top: 10px; font-size: 14px; }
-  .formule strong { color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; font-size: 13px; }
+  .formule strong { white-space: nowrap; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; font-size: 13px; }
   .formule span { font-weight: 700; color: var(--ink); text-align: right; }
   .parcours .carte p.petit { flex: 0; font-size: 12px; color: #777; margin-top: 6px; }
   .objectifs { background: var(--cream); border-left: 3px solid var(--gold); padding: 16px 20px; margin-bottom: 22px; font-size: 15px; }
@@ -38,6 +38,14 @@
   .objectifs li { margin-bottom: 4px; }
   .coche { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; font-size: 14px; }
   .coche input { width: auto; margin-top: 4px; }
+  .parcours .carte img.photo { width: calc(100% + 44px); margin: -26px -22px 16px; height: 170px; object-fit: cover; object-position: center 20%; border-radius: 12px 12px 0 0; }
+  .app { background: var(--navy-deep); color: white; padding: 52px 0; }
+  .app .wrap { display: flex; gap: 40px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .app .tel { width: 210px; background: #111; border-radius: 34px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); flex-shrink: 0; }
+  .app .tel img { width: 100%; border-radius: 26px; display: block; }
+  .app .texte { max-width: 380px; }
+  .app h2 { color: white; font-size: 26px; margin-bottom: 18px; }
+  .app a { display: inline-block; background: var(--gold); color: var(--navy-deep); font-weight: 700; text-decoration: none; padding: 13px 28px; border-radius: 40px; }
   .devise { text-align: center; font-family: Georgia, serif; font-style: italic; font-size: 20px; color: var(--navy); margin-top: 34px; }
   .formats { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .format { border-radius: 12px; padding: 28px 24px; }
@@ -81,27 +89,30 @@
     <div class="wrap">
             <div class="parcours">
         <div class="carte">
+          <img class="photo" src="/images/tapa-adultes.jpg" alt="TAPA INVEST Adultes" loading="lazy">
           <div class="num">01</div>
-          <h3>BRVM Starter Adultes</h3>
-          <div class="pour">Pour les adultes actifs</div>
+          <h3>TAPA INVEST Adultes</h3>
+          <div class="pour">En ligne · En présentiel</div>
           <p><strong>Objectif :</strong> reprendre le contrôle de ses finances, mieux gérer son budget, épargner et commencer à investir durablement.</p>
           <div class="formule"><strong>En ligne</strong><span>Disponible immédiatement</span></div>
           <a class="btn-carte" href="/offres.html#brvm-starter-en-ligne">En savoir plus</a>
           <div class="formule"><strong>En présentiel</strong><span>50 000 FCFA</span></div>
-          <button type="button" class="btn-carte" data-parcours="BRVM Starter Adultes" data-format="En présentiel">S'inscrire</button>
+          <button type="button" class="btn-carte" data-parcours="TAPA Invest Adultes" data-format="En présentiel">S'inscrire</button>
         </div>
         <div class="carte">
+          <img class="photo" src="/images/tapa-jeunes.jpg" alt="TAPA INVEST Jeunes" loading="lazy" style="object-position: center 22%;">
           <div class="num">02</div>
-          <h3>BRVM Starter Jeunes</h3>
+          <h3>TAPA INVEST Jeunes</h3>
           <div class="pour">Pour les 18 à 25 ans</div>
           <p><strong>Objectif :</strong> acquérir très tôt les bons réflexes financiers, apprendre à gérer ses premières ressources et découvrir l'investissement.</p>
           <div class="formule"><strong>En présentiel</strong><span>25 000 FCFA</span></div>
           <p class="petit">Un justificatif de la tranche d'âge sera demandé à l'inscription.</p>
-          <button type="button" class="btn-carte" data-parcours="BRVM Starter Jeunes" data-format="En présentiel">S'inscrire</button>
+          <button type="button" class="btn-carte" data-parcours="TAPA Invest Jeunes" data-format="En présentiel">S'inscrire</button>
         </div>
         <div class="carte">
+          <img class="photo" src="/images/tapa-femme.jpg" alt="TAPA INVEST Femme" loading="lazy">
           <div class="num">03</div>
-          <h3>TAPA Invest Femme</h3>
+          <h3>TAPA INVEST Femme</h3>
           <div class="pour">Pour les femmes</div>
           <p><strong>Objectif :</strong> renforcer son autonomie financière, mieux organiser son argent, développer son épargne et investir pour l'avenir.</p>
           <div class="formule"><strong>Tarif</strong><span>Communiqué en interne</span></div>
@@ -197,8 +208,8 @@
           <label for="f-parcours">Quelle formation vous intéresse ?</label>
           <select id="f-parcours" required>
             <option value="">— Choisir —</option>
-            <option value="BRVM Starter Adultes">BRVM Starter Adultes</option>
-            <option value="BRVM Starter Jeunes">BRVM Starter Jeunes</option>
+            <option value="TAPA Invest Adultes">TAPA Invest Adultes</option>
+            <option value="TAPA Invest Jeunes">TAPA Invest Jeunes</option>
             <option value="TAPA Invest Femme">TAPA Invest Femme</option>
           </select>
           <label for="f-objectif">Qu'attendez-vous de cette formation ?</label>
@@ -209,6 +220,16 @@
           <div id="f-resultat"></div>
         </form>
         <p style="font-size:12px; color:#777; margin-top:14px; text-align:center;">Aucun paiement à cette étape. Vos informations servent uniquement à vous contacter.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="app">
+    <div class="wrap">
+      <div class="tel"><img src="/images/app-tapa-invest.jpg" alt="Application TAPA Invest" loading="lazy"></div>
+      <div class="texte">
+        <h2>Découvrez notre application de gestion budgétaire digitale et d'investissement</h2>
+        <a href="https://www.tapainvest.com">Découvrir l'application</a>
       </div>
     </div>
   </section>
@@ -235,11 +256,11 @@
 
 
   // Pré-sélection du parcours depuis l'accueil (?parcours=adultes|jeunes|femme)
-  const NOMS = { adultes: 'BRVM Starter Adultes', jeunes: 'BRVM Starter Jeunes', femme: 'TAPA Invest Femme' };
+  const NOMS = { adultes: 'TAPA Invest Adultes', jeunes: 'TAPA Invest Jeunes', femme: 'TAPA Invest Femme' };
   const p = new URLSearchParams(location.search).get('parcours');
   if (p && NOMS[p] && p !== 'adultes') { document.getElementById('f-parcours').value = NOMS[p]; document.getElementById('formulaire').style.display = 'block'; }
 
-  function majNote() { document.getElementById('note-jeunes').style.display = document.getElementById('f-parcours').value === 'BRVM Starter Jeunes' ? 'block' : 'none'; }
+  function majNote() { document.getElementById('note-jeunes').style.display = document.getElementById('f-parcours').value === 'TAPA Invest Jeunes' ? 'block' : 'none'; }
   document.getElementById('f-parcours').addEventListener('change', majNote);
   document.querySelectorAll('button.btn-carte').forEach(b => b.addEventListener('click', () => {
     const f = document.getElementById('formulaire');
