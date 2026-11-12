@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Choisissez votre parcours de formation | TAPA CONSEIL</title>
+<title>Quel parcours est fait pour vous ? | TAPA CONSEIL</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <style>
   :root { --navy: #0F2F59; --navy-deep: #081b36; --gold: #DAAA37; --gold-light: #F0D385; --cream: #FBF8F2; --ink: #1C2733; --rule: #E3DCC9; }
@@ -27,6 +27,7 @@
   .parcours .carte .pour { font-style: italic; color: #555; font-size: 15px; margin-bottom: 12px; }
   .parcours .carte p { font-size: 15px; flex: 1; }
   .parcours .carte .exemple { font-size: 14px; color: #666; margin-top: 12px; }
+  .btn-carte { display: block; text-align: center; background: var(--gold); color: var(--navy-deep); text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 40px; font-size: 15px; margin-top: 18px; border: none; cursor: pointer; font-family: inherit; }
   .devise { text-align: center; font-family: Georgia, serif; font-style: italic; font-size: 20px; color: var(--navy); margin-top: 34px; }
   .formats { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .format { border-radius: 12px; padding: 28px 24px; }
@@ -57,72 +58,47 @@
 </style>
 </head>
 <body>
-  <div class="topbar"><img src="/images/logo.png" alt="TAPA CONSEIL"><a href="/">← Accueil</a></div>
+  <div class="topbar"><img src="/images/logo.png" alt="TAPA CONSEIL"></div>
 
   <div class="hero">
     <div class="wrap">
-      <h1>Votre argent. Votre réalité. <span>Votre formation.</span></h1>
-      <p>Nous avons tous besoin d'apprendre à gérer notre argent, mais nous n'avons pas tous les mêmes besoins.</p>
-      <p>À 22 ans, on apprend à gérer ses premières ressources. À 40 ans, on cherche à mieux maîtriser ses charges et à préparer son avenir. En tant que femme, on peut souhaiter renforcer son indépendance financière, protéger sa famille ou concrétiser ses projets.</p>
-      <p>Chez TAPA CONSEIL, l'éducation financière est adaptée à la réalité de chacun. C'est pourquoi nous vous proposons <strong style="color: var(--gold-light);">3 parcours</strong>.</p>
+      <h1>Quel parcours est <span>fait pour vous</span> ?</h1>
+      <p>3 parcours pour 3 profils différents.</p>
     </div>
   </div>
 
   <section>
     <div class="wrap">
-      <h2 class="section-title">Quel parcours est fait pour vous ?</h2>
-      <div class="parcours">
+            <div class="parcours">
         <div class="carte">
           <div class="num">01</div>
           <h3>BRVM Starter Adultes</h3>
           <div class="pour">Pour les adultes actifs</div>
           <p><strong>Objectif :</strong> reprendre le contrôle de ses finances, mieux gérer son budget, épargner et commencer à investir durablement.</p>
-          <div class="exemple">💼 Reprenez le contrôle de vos finances et construisez votre patrimoine.</div>
+          <a class="btn-carte" href="/offres.html#brvm-starter-en-ligne">En savoir plus</a>
         </div>
         <div class="carte">
           <div class="num">02</div>
           <h3>BRVM Starter Jeunes</h3>
           <div class="pour">Pour les 20 à 30 ans</div>
           <p><strong>Objectif :</strong> acquérir très tôt les bons réflexes financiers, apprendre à gérer ses premières ressources et découvrir l'investissement.</p>
-          <div class="exemple">🎓 Prenez les bonnes habitudes financières dès aujourd'hui.</div>
+          <button type="button" class="btn-carte" data-parcours="BRVM Starter Jeunes">S'inscrire</button>
         </div>
         <div class="carte">
           <div class="num">03</div>
           <h3>TAPA Invest Femme</h3>
           <div class="pour">Pour les femmes</div>
           <p><strong>Objectif :</strong> renforcer son autonomie financière, mieux organiser son argent, développer son épargne et investir pour l'avenir.</p>
-          <div class="exemple">🌸 Prenez votre autonomie financière en main et investissez dans votre avenir.</div>
+          <button type="button" class="btn-carte" data-parcours="TAPA Invest Femme">S'inscrire</button>
         </div>
       </div>
-      <p style="text-align:center; margin-top:26px;"><a href="/offres.html" style="color: var(--navy); font-weight:700;">Voir le détail de nos offres Jeunes et Femme →</a></p>
-      <div class="devise">Un même objectif : mieux gérer, épargner et investir.</div>
-      <p style="text-align:center; font-size:14px; color:#777; margin-top:6px;">Budget • Épargne • Gestion des dettes • Investissement</p>
     </div>
   </section>
 
-  <section style="background: white;">
-    <div class="wrap">
-      <h2 class="section-title">Deux façons de suivre votre parcours</h2>
-      <div class="formats">
-        <div class="format ligne">
-          <span class="badge">Disponible immédiatement</span>
-          <h3>Formation en ligne — BRVM Starter Adultes</h3>
-          <p>Où que vous soyez. Découvrez le détail de l'offre et inscrivez-vous directement, avec règlement en ligne.</p>
-          <a class="btn-wa" href="/offres.html#brvm-starter-en-ligne">Voir l'offre et m'inscrire</a>
-          </div>
-        <div class="format presentiel">
-          <span class="badge">À partir de janvier 2027</span>
-          <h3>Formation en présentiel</h3>
-          <p>À Abidjan, une session chaque fin de mois. C'est le format de <strong>BRVM Starter Jeunes</strong> et de <strong>TAPA Invest Femme</strong>, exclusivement en présentiel sauf conditions particulières. Remplissez le formulaire ci-dessous : vous êtes inscrit(e) sur la liste d'attente et nous vous contactons sur WhatsApp pour confirmer votre présence.</p>
-        </div>
-      </div>
-      <p style="text-align:center; font-size:14px; color:#666; margin-top:22px;">Détails et tarifs sur la page <a href="/offres.html" style="color: var(--navy); font-weight:700;">Notre offre</a>.</p>
-    </div>
-  </section>
 
-  <section id="formulaire">
+  <section id="formulaire" style="display:none;">
     <div class="wrap">
-      <h2 class="section-title" style="text-align:center;">Inscrivez-vous</h2>
+      <h2 class="section-title" style="text-align:center;">Inscription</h2>
       <div class="formulaire">
         <form id="form-parcours">
           <label for="f-nom">Nom</label>
@@ -160,7 +136,7 @@
             <option>Apprendre à investir</option>
             <option>Construire mon autonomie financière</option>
           </select>
-          <button type="submit">Je m'inscris sur la liste d'attente</button>
+          <button type="submit">Envoyer mon inscription</button>
           <div id="f-resultat"></div>
         </form>
         <p style="font-size:12px; color:#777; margin-top:14px; text-align:center;">Aucun paiement à cette étape. Vos informations servent uniquement à vous contacter.</p>
@@ -192,7 +168,15 @@
   // Pré-sélection du parcours depuis l'accueil (?parcours=adultes|jeunes|femme)
   const NOMS = { adultes: 'BRVM Starter Adultes', jeunes: 'BRVM Starter Jeunes', femme: 'TAPA Invest Femme' };
   const p = new URLSearchParams(location.search).get('parcours');
-  if (p && NOMS[p]) document.getElementById('f-parcours').value = NOMS[p];
+  if (p && NOMS[p] && p !== 'adultes') { document.getElementById('f-parcours').value = NOMS[p]; document.getElementById('formulaire').style.display = 'block'; }
+
+  document.querySelectorAll('button.btn-carte').forEach(b => b.addEventListener('click', () => {
+    const f = document.getElementById('formulaire');
+    f.style.display = 'block';
+    document.getElementById('f-parcours').value = b.dataset.parcours;
+    f.scrollIntoView({ behavior: 'smooth' });
+  }));
+  if (location.hash === '#formulaire') document.getElementById('formulaire').style.display = 'block';
 
   document.getElementById('form-parcours').addEventListener('submit', async (e) => {
     e.preventDefault();
