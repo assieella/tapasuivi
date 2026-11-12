@@ -431,6 +431,8 @@ CREATE TABLE IF NOT EXISTS renouvellements (
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS option_choisie TEXT;
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS tranche_age TEXT;
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS format_choisi TEXT;
+ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS contact_commercial BOOLEAN DEFAULT FALSE;
+ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS mois_souhaite TEXT;
 ALTER TABLE reservations_presentiel ADD COLUMN IF NOT EXISTS objectif TEXT;
 
 -- Test TAPA "Suis-je prête à investir ?" — outil de génération de leads, accessible sans

@@ -28,6 +28,16 @@
   .parcours .carte p { font-size: 15px; flex: 1; }
   .parcours .carte .exemple { font-size: 14px; color: #666; margin-top: 12px; }
   .btn-carte { display: block; text-align: center; background: var(--gold); color: var(--navy-deep); text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 40px; font-size: 15px; margin-top: 18px; border: none; cursor: pointer; font-family: inherit; }
+  .formule { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--rule); margin-top: 16px; padding-top: 10px; font-size: 14px; }
+  .formule strong { color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; font-size: 13px; }
+  .formule span { font-weight: 700; color: var(--ink); text-align: right; }
+  .parcours .carte p.petit { flex: 0; font-size: 12px; color: #777; margin-top: 6px; }
+  .objectifs { background: var(--cream); border-left: 3px solid var(--gold); padding: 16px 20px; margin-bottom: 22px; font-size: 15px; }
+  .objectifs h3 { font-size: 16px; margin-bottom: 8px; }
+  .objectifs ul { margin-left: 18px; }
+  .objectifs li { margin-bottom: 4px; }
+  .coche { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; font-size: 14px; }
+  .coche input { width: auto; margin-top: 4px; }
   .devise { text-align: center; font-family: Georgia, serif; font-style: italic; font-size: 20px; color: var(--navy); margin-top: 34px; }
   .formats { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .format { border-radius: 12px; padding: 28px 24px; }
@@ -75,21 +85,27 @@
           <h3>BRVM Starter Adultes</h3>
           <div class="pour">Pour les adultes actifs</div>
           <p><strong>Objectif :</strong> reprendre le contrôle de ses finances, mieux gérer son budget, épargner et commencer à investir durablement.</p>
+          <div class="formule"><strong>En ligne</strong><span>Disponible immédiatement</span></div>
           <a class="btn-carte" href="/offres.html#brvm-starter-en-ligne">En savoir plus</a>
+          <div class="formule"><strong>En présentiel</strong><span>50 000 FCFA</span></div>
+          <button type="button" class="btn-carte" data-parcours="BRVM Starter Adultes" data-format="En présentiel">S'inscrire</button>
         </div>
         <div class="carte">
           <div class="num">02</div>
           <h3>BRVM Starter Jeunes</h3>
-          <div class="pour">Pour les 20 à 30 ans</div>
+          <div class="pour">Pour les 18 à 25 ans</div>
           <p><strong>Objectif :</strong> acquérir très tôt les bons réflexes financiers, apprendre à gérer ses premières ressources et découvrir l'investissement.</p>
-          <button type="button" class="btn-carte" data-parcours="BRVM Starter Jeunes">S'inscrire</button>
+          <div class="formule"><strong>En présentiel</strong><span>25 000 FCFA</span></div>
+          <p class="petit">Un justificatif de la tranche d'âge sera demandé à l'inscription.</p>
+          <button type="button" class="btn-carte" data-parcours="BRVM Starter Jeunes" data-format="En présentiel">S'inscrire</button>
         </div>
         <div class="carte">
           <div class="num">03</div>
           <h3>TAPA Invest Femme</h3>
           <div class="pour">Pour les femmes</div>
           <p><strong>Objectif :</strong> renforcer son autonomie financière, mieux organiser son argent, développer son épargne et investir pour l'avenir.</p>
-          <button type="button" class="btn-carte" data-parcours="TAPA Invest Femme">S'inscrire</button>
+          <div class="formule"><strong>Tarif</strong><span>Communiqué en interne</span></div>
+          <button type="button" class="btn-carte" data-parcours="TAPA Invest Femme">S'inscrire pour en savoir plus</button>
         </div>
       </div>
     </div>
@@ -100,6 +116,24 @@
     <div class="wrap">
       <h2 class="section-title" style="text-align:center;">Inscription</h2>
       <div class="formulaire">
+        <div class="objectifs">
+          <h3>Objectif après la formation</h3>
+          <ul>
+            <li>Je comprends la BRVM.</li>
+            <li>Je connais le processus pour ouvrir un compte-titres.</li>
+            <li>Je connais certains titres et je peux les comparer.</li>
+            <li>Je sais passer un ordre de Bourse.</li>
+            <li>Je peux investir en toute confiance, car je ne suis plus seul(e).</li>
+          </ul>
+          <h3 style="margin-top:12px;">Avec la formation</h3>
+          <ul>
+            <li>Je prépare mon budget et mes objectifs.</li>
+            <li>Je découvre les placements et j'apprends à les comparer.</li>
+            <li>Je m'exerce à ouvrir un compte et à passer un ordre.</li>
+            <li>Je prépare mes prochaines étapes et le suivi de mes investissements.</li>
+          </ul>
+        </div>
+        <p style="font-weight:700; color:var(--navy); font-size:18px; text-align:center; margin-bottom:4px;">Je remplis le formulaire maintenant</p>
         <form id="form-parcours">
           <label for="f-nom">Nom</label>
           <input type="text" id="f-nom" required autocomplete="family-name">
@@ -113,12 +147,29 @@
             <option value="En ligne">En ligne</option>
             <option value="En présentiel">En présentiel</option>
           </select>
+          <label for="f-mois">Mois où vous souhaitez participer (à titre indicatif)</label>
+          <select id="f-mois">
+            <option value="">— Choisir —</option>
+            <option>Janvier</option>
+            <option>Février</option>
+            <option>Mars</option>
+            <option>Avril</option>
+            <option>Mai</option>
+            <option>Juin</option>
+            <option>Juillet</option>
+            <option>Août</option>
+            <option>Septembre</option>
+            <option>Octobre</option>
+            <option>Novembre</option>
+            <option>Décembre</option>
+            <option>Je ne sais pas encore</option>
+          </select>
           <label for="f-age">Votre tranche d'âge</label>
           <select id="f-age" required>
             <option value="">— Choisir —</option>
-            <option>Moins de 20 ans</option>
-            <option>20 à 30 ans</option>
-            <option>31 à 45 ans</option>
+            <option>Moins de 18 ans</option>
+            <option>18 à 25 ans</option>
+            <option>26 à 45 ans</option>
             <option>46 ans et plus</option>
           </select>
           <label for="f-parcours">Quelle formation vous intéresse ?</label>
@@ -136,6 +187,8 @@
             <option>Apprendre à investir</option>
             <option>Construire mon autonomie financière</option>
           </select>
+          <label class="coche"><input type="checkbox" id="f-commercial"><span>Je préfère être recontacté(e) par un(e) commercial(e).</span></label>
+          <p id="note-jeunes" style="display:none; font-size:13px; color:#777; margin-top:12px;">Un justificatif de la tranche d'âge (18 à 25 ans) sera demandé à l'inscription.</p>
           <button type="submit">Envoyer mon inscription</button>
           <div id="f-resultat"></div>
         </form>
@@ -170,10 +223,14 @@
   const p = new URLSearchParams(location.search).get('parcours');
   if (p && NOMS[p] && p !== 'adultes') { document.getElementById('f-parcours').value = NOMS[p]; document.getElementById('formulaire').style.display = 'block'; }
 
+  function majNote() { document.getElementById('note-jeunes').style.display = document.getElementById('f-parcours').value === 'BRVM Starter Jeunes' ? 'block' : 'none'; }
+  document.getElementById('f-parcours').addEventListener('change', majNote);
   document.querySelectorAll('button.btn-carte').forEach(b => b.addEventListener('click', () => {
     const f = document.getElementById('formulaire');
     f.style.display = 'block';
     document.getElementById('f-parcours').value = b.dataset.parcours;
+    document.getElementById('f-format').value = b.dataset.format || '';
+    majNote();
     f.scrollIntoView({ behavior: 'smooth' });
   }));
   if (location.hash === '#formulaire') document.getElementById('formulaire').style.display = 'block';
@@ -193,8 +250,10 @@
           whatsapp: document.getElementById('f-whatsapp').value,
           option: document.getElementById('f-parcours').value,
           format: document.getElementById('f-format').value,
+          mois: document.getElementById('f-mois').value,
           tranche_age: document.getElementById('f-age').value,
-          objectif: document.getElementById('f-objectif').value
+          objectif: document.getElementById('f-objectif').value,
+          contact_commercial: document.getElementById('f-commercial').checked
         })
       });
       const data = await res.json();
