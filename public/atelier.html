@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes finances, un nouveau départ — Atelier du 12 décembre 2026 | TAPA CONSEIL</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<style>
+  :root { --navy: #0F2F59; --navy-deep: #081b36; --gold: #DAAA37; --gold-light: #F0D385; --cream: #FBF8F2; --ink: #1C2733; --rule: #E3DCC9; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--cream); line-height: 1.65; font-size: 17px; }
+  h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; color: var(--navy); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .topbar { background: var(--navy-deep); padding: 12px 24px; }
+  .topbar img { height: 38px; }
+  .hero { background: var(--navy-deep); color: white; padding: 56px 0 52px; text-align: center; }
+  .hero .kicker { color: var(--gold-light); font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; }
+  .hero h1 { color: white; font-size: 44px; line-height: 1.15; margin-bottom: 18px; }
+  .hero h1 span { color: var(--gold-light); }
+  .hero p.accroche { color: #D9E2EF; max-width: 640px; margin: 0 auto 24px; }
+  .btn { display: inline-block; background: var(--gold); color: var(--navy-deep); font-weight: 700; text-decoration: none; padding: 15px 34px; border-radius: 40px; font-size: 17px; border: none; cursor: pointer; font-family: inherit; }
+  .btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+  .date { display: flex; justify-content: center; gap: 28px; align-items: center; flex-wrap: wrap; margin-top: 34px; color: white; }
+  .date .jour { font-family: Georgia, serif; text-align: center; line-height: 1; }
+  .date .jour small { display: block; font-size: 15px; color: var(--gold-light); letter-spacing: 1px; text-transform: uppercase; }
+  .date .jour b { font-size: 60px; color: var(--gold-light); }
+  .date .detail { text-align: left; font-size: 16px; }
+  .animateur { color: #D9E2EF; font-size: 15px; margin-top: 26px; }
+  section { padding: 52px 0; }
+  .section-title { font-size: 28px; margin-bottom: 18px; }
+  .cap { background: white; border-left: 4px solid var(--gold); padding: 18px 22px; margin-top: 8px; }
+  .cap strong { color: var(--navy); }
+  .liste { list-style: none; margin: 14px 0 22px; }
+  .liste li { padding: 9px 0 9px 28px; position: relative; border-bottom: 1px solid var(--rule); }
+  .liste li::before { content: "✓"; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+  .etapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
+  .etape { background: white; border: 1px solid var(--rule); border-radius: 12px; padding: 22px 20px; }
+  .etape .num { font-family: Georgia, serif; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #6B5F4A; font-weight: 700; }
+  .etape .duree { color: var(--gold); font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .etape h3 { font-size: 19px; margin-bottom: 8px; }
+  .etape p { font-size: 15px; }
+  .conseil { font-size: 15px; color: #555; margin-top: 22px; border-left: 3px solid var(--rule); padding-left: 16px; }
+  .note { background: var(--cream); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; margin-top: 18px; font-size: 15px; }
+  .reservation { background: white; }
+  .lieu { text-align: center; margin-bottom: 26px; }
+  .lieu .prix { font-family: Georgia, serif; font-size: 36px; font-weight: 700; color: var(--navy); margin-top: 8px; }
+  .lieu p { font-size: 15px; color: #555; }
+  .formulaire { background: var(--cream); border: 1px solid var(--rule); border-radius: 12px; padding: 30px 26px; max-width: 540px; margin: 0 auto; }
+  .formulaire label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 4px; }
+  .formulaire input, .formulaire select { width: 100%; padding: 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; font-family: inherit; background: white; }
+  .formulaire button { width: 100%; margin-top: 22px; }
+  .formulaire button:disabled { opacity: 0.6; cursor: wait; }
+  .places { text-align: center; font-weight: 700; color: var(--navy); margin-top: 14px; font-size: 15px; }
+  .contact { text-align: center; font-size: 15px; margin-top: 22px; color: #555; }
+  footer { background: var(--navy-deep); color: #9FB0C6; text-align: center; padding: 28px 24px; font-size: 13px; }
+  footer a { color: var(--gold-light); text-decoration: none; }
+  @media (max-width: 720px) { .etapes { grid-template-columns: 1fr; } .hero h1 { font-size: 32px; } }
+</style>
+</head>
+<body>
+  <div class="topbar"><img src="/images/logo.png" alt="TAPA CONSEIL"></div>
+
+  <div class="hero">
+    <div class="wrap">
+      <div class="kicker">TAPA CONSEIL · L'éducation financière en pratique · Bilan 2026 · Cap sur 2027</div>
+      <h1>Mes finances, <span>un nouveau départ.</span></h1>
+      <p class="accroche">Et si vous commenciez 2027 avec une vision claire de votre argent et un plan pour avancer ? Trois heures pour faire le point et passer à l'action.</p>
+      <a class="btn" href="#reservation">Je souhaite participer</a>
+      <div class="date">
+        <div class="jour"><small>Samedi</small><b>12</b><small>décembre 2026</small></div>
+        <div class="detail"><strong>9 h — 12 h</strong><br>Heure d'Abidjan · Présentiel uniquement</div>
+      </div>
+      <p class="animateur">Un atelier pratique animé par <strong>Ella ASSIE</strong>, Directrice de TAPA Conseil</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">Trois heures pour préparer votre nouveau départ financier</h2>
+      <div class="cap"><strong>Votre cap : 90 jours.</strong> Repartez avec votre diagnostic financier, une première version de votre budget et vos priorités d'action pour débuter 2027.</div>
+    </div>
+  </section>
+
+  <section style="background: white;">
+    <div class="wrap">
+      <h2 class="section-title">Pour vous, si…</h2>
+      <p>Vous voulez reprendre la main sur vos finances personnelles, quel que soit votre point de départ. Aucun prérequis en finance.</p>
+      <ul class="liste">
+        <li>Vous ne savez pas toujours où part votre argent.</li>
+        <li>Vous souhaitez mieux organiser vos dépenses et vos remboursements.</li>
+        <li>Vous voulez épargner et préparer vos projets d'investissement.</li>
+        <li>Vous cherchez un plan réaliste pour commencer 2027.</li>
+      </ul>
+      <div class="note"><strong>Un atelier : vous travaillez sur vos propres chiffres.</strong> Une formation permet d'acquérir et d'approfondir des connaissances, avec des exercices possibles. Ici, la priorité est la mise en pratique : des explications ciblées, des exercices guidés et du temps pour construire vos outils à partir de votre situation.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">3 heures. Des décisions concrètes.</h2>
+      <p style="color:#555;">Diagnostic · Budget · Plan d'action</p>
+      <div class="etapes">
+        <div class="etape"><div class="num">01 / Faire le point</div><div class="duree">50 min</div><h3>Votre bilan financier 2026</h3><p>Repérer vos habitudes et vos points de vigilance à travers les cinq piliers : suivi et planification, épargne et investissement, dettes, protection, ajustements réguliers.</p></div>
+        <div class="etape"><div class="num">02 / Organiser</div><div class="duree">60 min</div><h3>Votre budget de départ</h3><p>Mettre à plat vos revenus, vos dépenses et vos engagements. Commencer votre budget et découvrir comment le suivre avec TAPA Invest, notre application gratuite.</p></div>
+        <div class="etape"><div class="num">03 / Passer à l'action</div><div class="duree">70 min</div><h3>Votre plan sur 90 jours</h3><p>Choisir vos priorités, définir vos premières actions et prévoir un rendez-vous de suivi. Échanges, questions et pause café inclus dans ce temps.</p></div>
+      </div>
+      <p class="conseil">Pour profiter pleinement de l'atelier : venez avec votre téléphone et, si possible, vos montants de revenus, dépenses et dettes. Vos chiffres personnels restent les vôtres : vous n'avez pas à les présenter au groupe.</p>
+    </div>
+  </section>
+
+  <section class="reservation" id="reservation">
+    <div class="wrap">
+      <h2 class="section-title" style="text-align:center;">Faites le premier pas. Préparez votre place.</h2>
+      <div class="lieu">
+        <strong>Samedi 12 décembre 2026 · 9 h – 12 h</strong>
+        <p>Le Phare Coworking · Cocody Bonoumin, Abidjan</p>
+        <div class="prix">20 000 FCFA <span style="font-size:16px; font-weight:400;">/ personne</span></div>
+        <p>Pause café et fiches pratiques incluses.<br>TAPA Invest : application 100 % gratuite.</p>
+        <p style="margin-top:12px; color:var(--navy); font-weight:600;">Réservez votre place avec une avance de 10 000 FCFA. Le reste (10 000 FCFA) se règle le jour de l'atelier.</p>
+      </div>
+      <div class="formulaire">
+        <form id="form-atelier">
+          <label for="a-nom">Nom</label>
+          <input type="text" id="a-nom" required autocomplete="family-name">
+          <label for="a-prenom">Prénom</label>
+          <input type="text" id="a-prenom" required autocomplete="given-name">
+          <label for="a-whatsapp">Numéro WhatsApp</label>
+          <div style="display:flex; gap:8px;">
+            <select id="a-indicatif" style="width:130px; flex-shrink:0;" aria-label="Indicatif du pays">
+              <option value="+225">🇨🇮 +225</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+1">🇨🇦 +1</option>
+              <option value="+221">🇸🇳 +221</option>
+              <option value="+223">🇲🇱 +223</option>
+              <option value="+226">🇧🇫 +226</option>
+              <option value="+227">🇳🇪 +227</option>
+              <option value="+228">🇹🇬 +228</option>
+              <option value="+229">🇧🇯 +229</option>
+              <option value="+224">🇬🇳 +224</option>
+              <option value="+237">🇨🇲 +237</option>
+              <option value="+241">🇬🇦 +241</option>
+              <option value="+32">🇧🇪 +32</option>
+              <option value="+41">🇨🇭 +41</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+212">🇲🇦 +212</option>
+              <option value="">Autre</option>
+            </select>
+            <input type="tel" id="a-whatsapp" placeholder="Ex : 0504775774" required autocomplete="tel-national">
+          </div>
+          <label for="a-priorite">Votre priorité pour 2027 *</label>
+          <input type="text" id="a-priorite" maxlength="150" placeholder="Réponse très courte" required>
+          <button type="submit" class="btn">Je souhaite participer</button>
+          <p style="font-size:13px; color:#777; text-align:center; margin-top:10px;">Après l'envoi, vous pourrez payer votre avance de 10 000 FCFA avec Wave.</p>
+          <div id="a-resultat"></div>
+        </form>
+      </div>
+      <p class="places">Nombre de places limité : 40</p>
+      <p class="contact">Besoin d'un renseignement ? <a href="https://wa.me/2250504775774" style="color: var(--navy); font-weight:700;">+225 05 04 77 57 74</a></p>
+      <p style="text-align:center; margin-top:22px;"><a class="btn btn-outline" href="https://www.tapainvest.com" style="padding:12px 26px; font-size:15px;">Découvrir TAPA Invest ↗</a></p>
+    </div>
+  </section>
+
+  <footer>© 2026 TAPA Conseil · Avec Ella ASSIE</footer>
+
+<script>
+  const LIEN_AVANCE = 'https://pay.wave.com/m/M_ci_PdQV2t0G8Dpm/c/ci/?amount=10000';
+  document.getElementById('form-atelier').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const el = document.getElementById('a-resultat');
+    const bouton = e.target.querySelector('button');
+    bouton.disabled = true;
+    try {
+      const res = await fetch('/api/reservations-presentiel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom: document.getElementById('a-nom').value,
+          prenom: document.getElementById('a-prenom').value,
+          whatsapp: (document.getElementById('a-indicatif').value + ' ' + document.getElementById('a-whatsapp').value.trim()).trim(),
+          option: 'Atelier 12 décembre 2026',
+          format: 'En présentiel',
+          objectif: document.getElementById('a-priorite').value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Une erreur est survenue.');
+      e.target.innerHTML = '<p style="color:#0B6E4F; font-weight:600; text-align:center; font-size:17px;">✅ Inscription enregistrée !</p>'
+        + '<p style="text-align:center; font-size:15px; margin:12px 0 18px;">Pour réserver votre place, réglez votre avance de <strong>10 000 FCFA</strong>. Le reste (10 000 FCFA) se règle le jour de l\'atelier.</p>'
+        + '<a class="btn" href="' + LIEN_AVANCE + '" style="display:block; text-align:center;">Payer mon avance avec Wave</a>';
+    } catch (err) {
+      el.innerHTML = `<p style="color:#C0392B; font-size:13px; margin-top:10px;">${err.message}</p>`;
+      bouton.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
