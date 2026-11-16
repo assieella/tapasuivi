@@ -114,6 +114,7 @@
     .registre { font-size: 13px; }
   }
   .flottant { position: fixed; right: 18px; bottom: 18px; z-index: 50; background: var(--gold); color: var(--navy-deep); font-weight: 700; text-decoration: none; padding: 14px 22px; border-radius: 40px; font-size: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+  .flottant-atelier { bottom: 78px; background: var(--navy); color: white; border: 2px solid var(--gold); }
 </style>
 </head>
 <body>
@@ -224,6 +225,11 @@
     })();
   </script>
 
+<a class="flottant flottant-atelier" id="btn-atelier" href="/atelier.html">ATELIER 12 DÉC.</a>
 <a class="flottant" href="/parcours.html">NOS OFFRES</a>
+<script>
+  // Bouton temporaire : disparaît tout seul après l'atelier du 12 décembre 2026.
+  if (Date.now() > Date.UTC(2026, 11, 13)) document.getElementById('btn-atelier').remove();
+</script>
 </body>
 </html>
