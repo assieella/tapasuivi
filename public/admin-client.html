@@ -224,8 +224,8 @@
       const el = document.getElementById('resultat-email');
       const champ = document.getElementById('nouvel-email');
       try {
-        const { ancien_email, email } = await apiCall(`/api/admin/clients/${clientId}/email`, { method: 'POST', body: JSON.stringify({ email: champ.value }) });
-        el.innerHTML = `<p class="success">✅ Email corrigé : ${ancien_email} → <strong>${email}</strong>. Le client se connecte désormais avec cette adresse (même mot de passe).</p>`;
+        const { ancien_email, email, prospect_archive } = await apiCall(`/api/admin/clients/${clientId}/email`, { method: 'POST', body: JSON.stringify({ email: champ.value }) });
+        el.innerHTML = `<p class="success">✅ Email corrigé : ${ancien_email} → <strong>${email}</strong>. Le client se connecte désormais avec cette adresse (même mot de passe).${prospect_archive ? '<br><span style="font-size:12px; color:#777;">Son ancien compte prospect (' + prospect_archive + ') a été mis de côté, rien n\'est supprimé.</span>' : ''}</p>`;
         document.getElementById('email-actuel').textContent = email;
       } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
     }

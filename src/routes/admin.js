@@ -114,10 +114,22 @@ router.post('/clients/:id/email', requireAdminAuth, async (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return res.status(400).json({ error: 'Adresse email invalide.' });
   const client = await pool.query("SELECT id, email FROM users WHERE id = $1 AND role = 'client'", [id]);
   if (!client.rows.length) return res.status(404).json({ error: 'Client introuvable.' });
-  const doublon = await pool.query('SELECT id FROM users WHERE email = $1 AND id <> $2', [mail, id]);
-  if (doublon.rows.length) return res.status(409).json({ error: 'Cette adresse est déjà utilisée par un autre compte.' });
+  const doublon = await pool.query('SELECT id, role, programme, full_name, created_at FROM users WHERE email = $1 AND id <> $2', [mail, id]);
+  let prospectArchive = null;
+  if (doublon.rows.length) {
+    const d = doublon.rows[0];
+    // Cas courant : la personne s'était déjà inscrite elle-même comme prospect (vidéos gratuites)
+    // avec la bonne adresse. Ce simple compte prospect n'a pas de programme : on libère l'adresse
+    // en la renommant (rien n'est supprimé), puis on corrige la fiche du client.
+    if (d.role !== 'prospect') {
+      const quoi = d.role === 'admin' ? 'un compte administrateur' : (d.programme === 'gratuit' ? 'un compte gratuit' : 'un autre client');
+      return res.status(409).json({ error: `Cette adresse est déjà utilisée par ${quoi} (${d.full_name || 'sans nom'}, créé le ${new Date(d.created_at).toLocaleDateString('fr-FR')}).` });
+    }
+    await pool.query('UPDATE users SET email = $1 WHERE id = $2', [`ancien-prospect-${d.id}.${mail}`, d.id]);
+    prospectArchive = d.full_name || 'prospect';
+  }
   await pool.query('UPDATE users SET email = $1 WHERE id = $2', [mail, id]);
-  res.json({ ancien_email: client.rows[0].email, email: mail });
+  res.json({ ancien_email: client.rows[0].email, email: mail, prospect_archive: prospectArchive });
 });
 
 // Renouvelle l'accès d'un client payant pour 1, 6 ou 12 mois. Si l'accès est encore actif, la
