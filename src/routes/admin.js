@@ -121,12 +121,16 @@ router.post('/clients/:id/email', requireAdminAuth, async (req, res) => {
     // Cas courant : la personne s'était déjà inscrite elle-même comme prospect (vidéos gratuites)
     // avec la bonne adresse. Ce simple compte prospect n'a pas de programme : on libère l'adresse
     // en la renommant (rien n'est supprimé), puis on corrige la fiche du client.
-    if (d.role !== 'prospect') {
+    const estGratuit = d.role === 'client' && d.programme === 'gratuit';
+    if (estGratuit && req.body.confirmer_archivage !== true) {
+      return res.status(409).json({ confirmer_archivage: true, error: `Cette adresse est déjà utilisée par un compte gratuit (${d.full_name || 'sans nom'}, créé le ${new Date(d.created_at).toLocaleDateString('fr-FR')}).` });
+    }
+    if (d.role !== 'prospect' && !estGratuit) {
       const quoi = d.role === 'admin' ? 'un compte administrateur' : (d.programme === 'gratuit' ? 'un compte gratuit' : 'un autre client');
       return res.status(409).json({ error: `Cette adresse est déjà utilisée par ${quoi} (${d.full_name || 'sans nom'}, créé le ${new Date(d.created_at).toLocaleDateString('fr-FR')}).` });
     }
-    await pool.query('UPDATE users SET email = $1 WHERE id = $2', [`ancien-prospect-${d.id}.${mail}`, d.id]);
-    prospectArchive = d.full_name || 'prospect';
+    await pool.query('UPDATE users SET email = $1 WHERE id = $2', [`ancien-${estGratuit ? 'gratuit' : 'prospect'}-${d.id}.${mail}`, d.id]);
+    prospectArchive = d.full_name || (estGratuit ? 'compte gratuit' : 'prospect');
   }
   await pool.query('UPDATE users SET email = $1 WHERE id = $2', [mail, id]);
   res.json({ ancien_email: client.rows[0].email, email: mail, prospect_archive: prospectArchive });
