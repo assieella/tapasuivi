@@ -106,6 +106,20 @@ router.get('/clients/:id', requireAdminAuth, async (req, res) => {
   res.json({ client: user.rows[0], statut, profiles: profiles.rows, plans: plans.rows, portfolios: portfolios.rows });
 });
 
+// Corrige l'adresse email d'un client (faute de frappe). Le mot de passe, le programme et
+// tout l'historique sont conservés : le client se connecte simplement avec la nouvelle adresse.
+router.post('/clients/:id/email', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+  const mail = String(req.body.email || '').toLowerCase().trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return res.status(400).json({ error: 'Adresse email invalide.' });
+  const client = await pool.query("SELECT id, email FROM users WHERE id = $1 AND role = 'client'", [id]);
+  if (!client.rows.length) return res.status(404).json({ error: 'Client introuvable.' });
+  const doublon = await pool.query('SELECT id FROM users WHERE email = $1 AND id <> $2', [mail, id]);
+  if (doublon.rows.length) return res.status(409).json({ error: 'Cette adresse est déjà utilisée par un autre compte.' });
+  await pool.query('UPDATE users SET email = $1 WHERE id = $2', [mail, id]);
+  res.json({ ancien_email: client.rows[0].email, email: mail });
+});
+
 // Renouvelle l'accès d'un client payant pour 1, 6 ou 12 mois. Si l'accès est encore actif, la
 // nouvelle période s'ajoute à la fin de la période en cours (aucun jour perdu) ; s'il est déjà
 // terminé, elle démarre aujourd'hui.

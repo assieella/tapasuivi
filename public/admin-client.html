@@ -220,6 +220,16 @@
       await apiCall(`/api/admin/analyses-portefeuille/${id}`, { method: 'DELETE' });
       document.getElementById('analyse-resultat').innerHTML = '<p class="success">Brouillon supprimé.</p>';
     }
+    async function corrigerEmail() {
+      const el = document.getElementById('resultat-email');
+      const champ = document.getElementById('nouvel-email');
+      try {
+        const { ancien_email, email } = await apiCall(`/api/admin/clients/${clientId}/email`, { method: 'POST', body: JSON.stringify({ email: champ.value }) });
+        el.innerHTML = `<p class="success">✅ Email corrigé : ${ancien_email} → <strong>${email}</strong>. Le client se connecte désormais avec cette adresse (même mot de passe).</p>`;
+        document.getElementById('email-actuel').textContent = email;
+      } catch (e) { el.innerHTML = `<p class="error">${e.message}</p>`; }
+    }
+
     async function reinitialiserMotDePasse() {
       if (!confirm('Générer un nouveau mot de passe pour ce client ? L\'ancien ne fonctionnera plus.')) return;
       const el = document.getElementById('resultat-reset-mdp');
@@ -270,7 +280,7 @@
           const suffixe = mois > 1 ? 's' : '';
           return programme.startsWith('suivi_') ? `Suivi seul ${mois} mois${suffixe}` : `${mois} mois${suffixe}`;
         }
-        document.getElementById('identite-content').innerHTML = `<h1>${client.full_name}</h1><p>${client.email} ${client.phone ? '— ' + client.phone : ''}</p><p>Programme : <strong>${libelleProgramme(client.programme)}</strong> — client depuis le ${new Date(client.created_at).toLocaleDateString('fr-FR')}</p><button onclick="reinitialiserMotDePasse()" style="width:auto; padding:6px 14px; font-size:13px; margin-top:8px;">🔑 Réinitialiser son mot de passe</button><div id="resultat-reset-mdp"></div>`;
+        document.getElementById('identite-content').innerHTML = `<h1>${client.full_name}</h1><p><span id="email-actuel">${client.email}</span> ${client.phone ? '— ' + client.phone : ''}</p><p>Programme : <strong>${libelleProgramme(client.programme)}</strong> — client depuis le ${new Date(client.created_at).toLocaleDateString('fr-FR')}</p><button onclick="reinitialiserMotDePasse()" style="width:auto; padding:6px 14px; font-size:13px; margin-top:8px;">🔑 Réinitialiser son mot de passe</button><div id="resultat-reset-mdp"></div><div style="margin-top:14px;"><input type="email" id="nouvel-email" placeholder="Nouvelle adresse email" style="width:260px; padding:7px; margin-right:6px;"><button onclick="corrigerEmail()" style="width:auto; padding:6px 14px; font-size:13px;">✏️ Corriger son email</button><div id="resultat-email"></div></div>`;
         const p = profiles[0];
         document.getElementById('profil-content').innerHTML = p ? `<h2>Profil investisseur</h2><p><span class="badge badge-equilibre">${p.profile_type}</span> (score ${p.score})</p><p>${p.profession || ''} — revenus ${p.revenu_mensuel ? Number(p.revenu_mensuel).toLocaleString('fr-FR') + ' FCFA/mois' : 'N/A'} — capital disponible ${p.capital_disponible ? Number(p.capital_disponible).toLocaleString('fr-FR') + ' FCFA' : 'N/A'}</p><p>${p.situation_familiale || ''}${p.nombre_enfants ? `, ${p.nombre_enfants} enfant(s)` : ''}</p>` : '<h2>Profil investisseur</h2><p style="color:#999;">Pas encore complété.</p>';
         const pl = plans[0];
